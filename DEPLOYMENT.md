@@ -48,9 +48,15 @@ This guide will help you set up automatic deployment from GitHub to Firebase Hos
 
 3. **Click "New repository secret"**
 
-4. **Create the secret:**
+4. **Create the Firebase secret:**
    - **Name:** `FIREBASE_SERVICE_ACCOUNT_AI_STUDENT_ASSISTANT_76E9E`
    - **Value:** Paste the entire JSON content from the downloaded file
+   - Click **"Add secret"**
+
+5. **Create the Gemini API Key secret:**
+   - Click **"New repository secret"** again
+   - **Name:** `GEMINI_API_KEY`
+   - **Value:** `AIzaSyA6rafof_TPICMliKFzl9aSf9Mv32g2Ff4`
    - Click **"Add secret"**
 
 ### Step 3: Test Automatic Deployment
