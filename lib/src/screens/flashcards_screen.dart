@@ -191,28 +191,44 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Flashcards'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: _showGenerationHistory,
-            tooltip: 'Generation History',
+    return Column(
+      children: [
+        // Custom header
+        Container(
+          color: Theme.of(context).colorScheme.surface,
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Text(
+                'Flashcards',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.history),
+                onPressed: _showGenerationHistory,
+                tooltip: 'Generation History',
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: _generateFlashcards,
+                tooltip: 'Generate Flashcards',
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _generateFlashcards,
-            tooltip: 'Generate Flashcards',
-          ),
-        ],
-      ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _flashcards.isEmpty
-              ? _buildEmptyState()
-              : _buildFlashcardView(),
+        ),
+        Expanded(
+          child:
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _flashcards.isEmpty
+                  ? _buildEmptyState()
+                  : _buildFlashcardView(),
+        ),
+      ],
     );
   }
 
@@ -430,30 +446,46 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: _showAnswer 
-                        ? Theme.of(context).colorScheme.secondaryContainer
-                        : Theme.of(context).colorScheme.primaryContainer,
+                    color:
+                        _showAnswer
+                            ? Theme.of(context).colorScheme.secondaryContainer
+                            : Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        _showAnswer ? Icons.lightbulb_outlined : Icons.quiz_outlined,
+                        _showAnswer
+                            ? Icons.lightbulb_outlined
+                            : Icons.quiz_outlined,
                         size: 20,
-                        color: _showAnswer 
-                            ? Theme.of(context).colorScheme.onSecondaryContainer
-                            : Theme.of(context).colorScheme.onPrimaryContainer,
+                        color:
+                            _showAnswer
+                                ? Theme.of(
+                                  context,
+                                ).colorScheme.onSecondaryContainer
+                                : Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         _showAnswer ? 'Answer' : 'Question',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: _showAnswer 
-                              ? Theme.of(context).colorScheme.onSecondaryContainer
-                              : Theme.of(context).colorScheme.onPrimaryContainer,
+                          color:
+                              _showAnswer
+                                  ? Theme.of(
+                                    context,
+                                  ).colorScheme.onSecondaryContainer
+                                  : Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -485,8 +517,11 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
                             h1: Theme.of(context).textTheme.headlineSmall,
                             h2: Theme.of(context).textTheme.titleLarge,
                             h3: Theme.of(context).textTheme.titleMedium,
-                            code: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                            code: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.surfaceVariant,
                               fontFamily: 'monospace',
                             ),
                           ),
@@ -506,8 +541,11 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
                             h1: Theme.of(context).textTheme.headlineSmall,
                             h2: Theme.of(context).textTheme.titleLarge,
                             h3: Theme.of(context).textTheme.titleMedium,
-                            code: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                            code: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.surfaceVariant,
                               fontFamily: 'monospace',
                             ),
                           ),
@@ -520,9 +558,14 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
                 const SizedBox(height: 20),
 
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceVariant.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(

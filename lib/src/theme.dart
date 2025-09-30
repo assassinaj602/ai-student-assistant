@@ -46,9 +46,9 @@ final ThemeData appTheme = ThemeData(
   ),
   textTheme: GoogleFonts.interTextTheme(),
 
-  // AppBar theme - Modern gradient style
+  // AppBar theme - Modern gradient style with proper contrast
   appBarTheme: AppBarTheme(
-    backgroundColor: primarySwatch[700],
+    backgroundColor: primarySwatch[600],
     foregroundColor: Colors.white,
     elevation: 0,
     centerTitle: true,
@@ -59,6 +59,7 @@ final ThemeData appTheme = ThemeData(
     ),
     toolbarTextStyle: GoogleFonts.inter(color: Colors.white),
     iconTheme: const IconThemeData(color: Colors.white),
+    actionsIconTheme: const IconThemeData(color: Colors.white),
   ),
 
   // Elevated button theme

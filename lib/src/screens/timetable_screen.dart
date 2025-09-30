@@ -92,93 +92,138 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
   Widget build(BuildContext context) {
     final courses = ref.watch(coursesProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Timetable'),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        bottom: TabBar(
-          controller: _mainTabController,
-          labelColor: Theme.of(context).colorScheme.onPrimaryContainer,
-          unselectedLabelColor: Theme.of(
-            context,
-          ).colorScheme.onPrimaryContainer.withOpacity(0.6),
-          indicatorColor: Theme.of(context).colorScheme.primary,
-          indicatorWeight: 3.0,
-          tabs: const [
-            Tab(icon: Icon(Icons.calendar_month), text: 'Calendar'),
-            Tab(icon: Icon(Icons.view_agenda), text: 'Schedule'),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.today),
-            onPressed: () {
-              setState(() {
-                _selectedDay = DateTime.now();
-                _focusedDay = DateTime.now();
-              });
-            },
-            tooltip: 'Go to Today',
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _navigateToAddCourse(),
-            tooltip: 'Add Course',
-          ),
-        ],
-      ),
-      body: courses.when(
-        data:
-            (courseList) => TabBarView(
-              controller: _mainTabController,
-              children: [
-                _buildCalendarView(courseList),
-                _buildScheduleView(courseList),
-              ],
-            ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error:
-            (error, stack) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading timetable',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    error.toString(),
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => ref.refresh(coursesProvider),
-                    child: const Text('Retry'),
-                  ),
-                ],
+    return Column(
+      children: [
+        // Custom header with tabs and actions
+        Container(
+          color: Theme.of(context).colorScheme.surface,
+          child: Column(
+            children: [
+              // Action buttons row
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Timetable',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.today),
+                          onPressed: () {
+                            setState(() {
+                              _selectedDay = DateTime.now();
+                              _focusedDay = DateTime.now();
+                            });
+                          },
+                          tooltip: 'Go to Today',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () => _navigateToAddCourse(),
+                          tooltip: 'Add Course',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-      ),
+              // Tab bar
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer.withOpacity(0.3),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                ),
+                child: TabBar(
+                  controller: _mainTabController,
+                  labelColor: Theme.of(context).colorScheme.primary,
+                  unselectedLabelColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.6),
+                  indicatorColor: Theme.of(context).colorScheme.primary,
+                  indicatorWeight: 3.0,
+                  tabs: const [
+                    Tab(icon: Icon(Icons.calendar_month), text: 'Calendar'),
+                    Tab(icon: Icon(Icons.view_agenda), text: 'Schedule'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Main content area
+        Expanded(
+          child: courses.when(
+            data:
+                (courseList) => TabBarView(
+                  controller: _mainTabController,
+                  children: [
+                    _buildCalendarView(courseList),
+                    _buildScheduleView(courseList),
+                  ],
+                ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error:
+                (error, stack) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading timetable',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        error.toString(),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => ref.refresh(coursesProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+          ),
+        ),
+      ],
     );
   }
 
-  /// Build calendar view with course events
+  /// Build calendar view with course events and course list
   Widget _buildCalendarView(List<Course> courses) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
           children: [
+            // Calendar section - smaller
             Container(
               constraints: BoxConstraints(
-                maxHeight: constraints.maxHeight * 0.6,
+                maxHeight:
+                    constraints.maxHeight * 0.35, // Reduced from 0.6 to 0.35
               ),
               child: TableCalendar<Course>(
                 firstDay: DateTime.utc(2020, 1, 1),
@@ -284,19 +329,18 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
     return courses.where((course) => course.days.contains(dayName)).toList();
   }
 
-  /// Build selected day events widget with enhanced layout
+  /// Build selected day events and all courses list with enhanced layout
   Widget _buildSelectedDayEvents(List<Course> courses) {
     final events = _getEventsForDay(_selectedDay, courses);
     final dateFormat = DateFormat('EEEE, MMMM d, yyyy');
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Enhanced header with more prominence
+        // Date header - more compact
         Container(
           width: double.infinity,
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -306,57 +350,96 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text(
-                dateFormat.format(_selectedDay),
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
+              Icon(
+                Icons.calendar_today,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                size: 20,
               ),
-              const SizedBox(height: 8),
-              Text(
-                events.isEmpty 
-                    ? 'No classes scheduled' 
-                    : '${events.length} class${events.length == 1 ? '' : 'es'} scheduled',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
-                  fontWeight: FontWeight.w500,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      dateFormat.format(_selectedDay),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    Text(
+                      events.isEmpty
+                          ? 'No classes today'
+                          : '${events.length} class${events.length == 1 ? '' : 'es'} scheduled',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
+
+        // All Courses Section Header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.school,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'All Courses',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${courses.length} courses',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Courses List - Enhanced with attendance
         Expanded(
           child:
-              events.isEmpty
+              courses.isEmpty
                   ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.event_busy,
+                          Icons.add_circle_outline,
                           size: 64,
                           color: Theme.of(context).colorScheme.outline,
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No classes scheduled',
+                          'No courses added yet',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
+                        const SizedBox(height: 8),
                         Text(
-                          'for this day',
+                          'Tap the + button to add your first course',
                           style: Theme.of(
                             context,
                           ).textTheme.bodyMedium?.copyWith(
@@ -364,15 +447,19 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
                               context,
                             ).colorScheme.onSurface.withOpacity(0.6),
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
                   )
                   : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: events.length,
+                    itemCount: courses.length,
                     itemBuilder: (context, index) {
-                      return _buildEnhancedCourseCard(events[index]);
+                      return _buildEnhancedCourseCardWithAttendance(
+                        courses[index],
+                        events.contains(courses[index]),
+                      );
                     },
                   ),
         ),
@@ -690,6 +777,238 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
           ),
         ),
       ),
+    );
+  }
+
+  /// Build enhanced course card with attendance functionality
+  Widget _buildEnhancedCourseCardWithAttendance(
+    Course course,
+    bool isScheduledToday,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.surface,
+            isScheduledToday
+                ? Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withOpacity(0.5)
+                : Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withOpacity(0.2),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color:
+              isScheduledToday
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
+                  : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          width: isScheduledToday ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _navigateToCourseDetail(course),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // Course header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.school,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  course.name,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              if (isScheduledToday)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Today',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall?.copyWith(
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSecondary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            course.location.isNotEmpty
+                                ? course.location
+                                : 'No location set',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Course details
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildCourseDetailItem(
+                        Icons.access_time,
+                        course.times.isNotEmpty ? course.times : 'No time set',
+                        context,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildCourseDetailItem(
+                        Icons.location_on,
+                        course.location.isNotEmpty
+                            ? course.location
+                            : 'No location',
+                        context,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Days and actions
+                Row(
+                  children: [
+                    Expanded(
+                      child: Wrap(
+                        spacing: 4,
+                        children:
+                            course.days
+                                .map(
+                                  (day) => Chip(
+                                    label: Text(
+                                      day.toUpperCase(),
+                                      style: const TextStyle(fontSize: 10),
+                                    ),
+                                    backgroundColor:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.secondaryContainer,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Action buttons
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit, size: 20),
+                          onPressed: () => _navigateToAddCourse(course),
+                          tooltip: 'Edit Course',
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.delete,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          onPressed: () => _deleteCourse(course),
+                          tooltip: 'Delete Course',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCourseDetailItem(
+    IconData icon,
+    String text,
+    BuildContext context,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 

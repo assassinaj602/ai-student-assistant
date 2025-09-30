@@ -58,6 +58,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.13.1
   flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
@@ -71,7 +72,8 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # assets:
+  assets:
+    - assets/
     # .env removed for security - API keys passed via --dart-define in CI/CD
 
   # To add assets to your application, add an assets section, like this:
@@ -104,3 +106,14 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Flutter Launcher Icons configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+    background_color: "#065F46"
+    theme_color: "#10B981"
+  image_path: "assets/icon.jpg"
+  min_sdk_android: 21
