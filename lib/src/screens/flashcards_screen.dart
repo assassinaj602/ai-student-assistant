@@ -417,62 +417,120 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
     return Container(
       margin: const EdgeInsets.all(16),
       child: Card(
-        elevation: 4,
+        elevation: 6,
+        shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: InkWell(
           onTap: _toggleAnswer,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(28),
             width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 300),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  _showAnswer ? Icons.lightbulb : Icons.help_outline,
-                  size: 32,
-                  color: Theme.of(context).primaryColor,
-                ),
-                const SizedBox(height: 16),
-
-                Text(
-                  _showAnswer ? 'Answer' : 'Question',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.7),
-                    fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _showAnswer 
+                        ? Theme.of(context).colorScheme.secondaryContainer
+                        : Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _showAnswer ? Icons.lightbulb_outlined : Icons.quiz_outlined,
+                        size: 20,
+                        color: _showAnswer 
+                            ? Theme.of(context).colorScheme.onSecondaryContainer
+                            : Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _showAnswer ? 'Answer' : 'Question',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: _showAnswer 
+                              ? Theme.of(context).colorScheme.onSecondaryContainer
+                              : Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
                 Expanded(
                   child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
                     child: AnimatedCrossFade(
                       duration: const Duration(milliseconds: 250),
                       crossFadeState:
                           _showAnswer
                               ? CrossFadeState.showSecond
                               : CrossFadeState.showFirst,
-                      firstChild: MarkdownBody(
-                        data: flashcard.question,
-                        shrinkWrap: true,
+                      firstChild: Container(
+                        width: double.infinity,
+                        child: MarkdownBody(
+                          data: flashcard.question,
+                          shrinkWrap: true,
+                          styleSheet: MarkdownStyleSheet(
+                            p: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              fontSize: 18,
+                              height: 1.5,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            h1: Theme.of(context).textTheme.headlineSmall,
+                            h2: Theme.of(context).textTheme.titleLarge,
+                            h3: Theme.of(context).textTheme.titleMedium,
+                            code: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ),
                       ),
-                      secondChild: MarkdownBody(
-                        data: flashcard.answer,
-                        shrinkWrap: true,
+                      secondChild: Container(
+                        width: double.infinity,
+                        child: MarkdownBody(
+                          data: flashcard.answer,
+                          shrinkWrap: true,
+                          styleSheet: MarkdownStyleSheet(
+                            p: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              fontSize: 18,
+                              height: 1.5,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            h1: Theme.of(context).textTheme.headlineSmall,
+                            h2: Theme.of(context).textTheme.titleLarge,
+                            h3: Theme.of(context).textTheme.titleMedium,
+                            code: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-                Text(
-                  'Tap to ${_showAnswer ? 'hide' : 'reveal'} answer',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.5),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Tap to ${_showAnswer ? 'hide' : 'reveal'} answer',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],

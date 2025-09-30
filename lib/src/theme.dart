@@ -1,43 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Primary color swatch for the app theme
-const MaterialColor primarySwatch = MaterialColor(0xFF0B3D91, <int, Color>{
-  50: Color(0xFFE8EFFB),
-  100: Color(0xFFC7D8F6),
-  200: Color(0xFFA1BFF0),
-  300: Color(0xFF7BA6EA),
-  400: Color(0xFF568EE5),
-  500: Color(0xFF2F75DF),
-  600: Color(0xFF255EBA),
-  700: Color(0xFF1B4895),
-  800: Color(0xFF12306F),
-  900: Color(0xFF08194A),
+/// Modern green/teal primary color swatch inspired by healthcare/wellness apps
+const MaterialColor primarySwatch = MaterialColor(0xFF065F46, <int, Color>{
+  50: Color(0xFFECFDF5),
+  100: Color(0xFFD1FAE5),
+  200: Color(0xFFA7F3D0),
+  300: Color(0xFF6EE7B7),
+  400: Color(0xFF34D399),
+  500: Color(0xFF10B981),
+  600: Color(0xFF059669),
+  700: Color(0xFF047857),
+  800: Color(0xFF065F46),
+  900: Color(0xFF064E3B),
+});
+
+/// Secondary teal colors
+const MaterialColor secondarySwatch = MaterialColor(0xFF0F766E, <int, Color>{
+  50: Color(0xFFF0FDFA),
+  100: Color(0xFFCCFBF1),
+  200: Color(0xFF99F6E4),
+  300: Color(0xFF5EEAD4),
+  400: Color(0xFF2DD4BF),
+  500: Color(0xFF14B8A6),
+  600: Color(0xFF0D9488),
+  700: Color(0xFF0F766E),
+  800: Color(0xFF115E59),
+  900: Color(0xFF134E4A),
 });
 
 /// Main theme configuration for the AI Student Assistant app
 final ThemeData appTheme = ThemeData(
   primarySwatch: primarySwatch,
   colorScheme: ColorScheme.fromSwatch(primarySwatch: primarySwatch).copyWith(
-    secondary: Color(0xFF2AB7A9),
-    background: Color(0xFFF6F8FA),
-    error: Color(0xFFD32F2F),
+    secondary: secondarySwatch[600]!,
+    surface: const Color(0xFFF8FAFC),
+    background: const Color(0xFFF1F5F9),
+    error: const Color(0xFFEF4444),
     onPrimary: Colors.white,
-    onSurface: Color(0xFF0F172A),
+    onSecondary: Colors.white,
+    onSurface: const Color(0xFF1E293B),
+    onBackground: const Color(0xFF334155),
+    primaryContainer: primarySwatch[50],
+    secondaryContainer: secondarySwatch[50],
   ),
   textTheme: GoogleFonts.interTextTheme(),
 
-  // AppBar theme
+  // AppBar theme - Modern gradient style
   appBarTheme: AppBarTheme(
     backgroundColor: primarySwatch[700],
     foregroundColor: Colors.white,
-    elevation: 2,
+    elevation: 0,
     centerTitle: true,
     titleTextStyle: GoogleFonts.inter(
       fontSize: 20,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w700,
       color: Colors.white,
     ),
+    toolbarTextStyle: GoogleFonts.inter(color: Colors.white),
+    iconTheme: const IconThemeData(color: Colors.white),
   ),
 
   // Elevated button theme
@@ -81,7 +102,27 @@ final ThemeData appTheme = ThemeData(
 
   // FloatingActionButton theme
   floatingActionButtonTheme: FloatingActionButtonThemeData(
-    backgroundColor: Color(0xFF2AB7A9),
+    backgroundColor: secondarySwatch[500],
     foregroundColor: Colors.white,
+    elevation: 4,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  ),
+
+  // Bottom Navigation Bar theme
+  bottomNavigationBarTheme: BottomNavigationBarThemeData(
+    backgroundColor: Colors.white,
+    selectedItemColor: primarySwatch[600],
+    unselectedItemColor: const Color(0xFF64748B),
+    type: BottomNavigationBarType.fixed,
+    elevation: 8,
+    showUnselectedLabels: true,
+    selectedLabelStyle: GoogleFonts.inter(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+    ),
+    unselectedLabelStyle: GoogleFonts.inter(
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+    ),
   ),
 );
