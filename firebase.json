@@ -1,0 +1,27 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "ai-student-assistant-76e9e",
+          "appId": "1:99042279552:android:183a9bcc4caecaaef8a665",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "ai-student-assistant-76e9e",
+          "configurations": {
+            "android": "1:99042279552:android:183a9bcc4caecaaef8a665",
+            "ios": "1:99042279552:ios:5555dc4d6af08833f8a665",
+            "web": "1:99042279552:web:012c06eca39c5a2cf8a665"
+          }
+        }
+      }
+    }
+  }
+}

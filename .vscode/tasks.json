@@ -1,0 +1,20 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "flutter_analyze_quick",
+			"type": "shell",
+			"command": "flutter analyze",
+			"problemMatcher": [
+				"$dart"
+			],
+			"group": "build"
+		},
+		{
+			"label": "flutter_pub_get",
+			"type": "shell",
+			"command": "flutter pub get",
+			"group": "build"
+		}
+	]
+}
