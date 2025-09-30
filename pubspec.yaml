@@ -71,9 +71,8 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  assets:
-    # Expose .env for development (NOTE: This embeds your API key in web builds; remove for production)
-    - .env
+  # assets:
+    # .env removed for security - API keys passed via --dart-define in CI/CD
 
   # To add assets to your application, add an assets section, like this:
   # assets:
