@@ -1,11 +1,11 @@
 {
-    "name": "ai_student_assistant",
-    "short_name": "ai_student_assistant",
+    "name": "AI Student Assistant",
+    "short_name": "AI Assistant",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#065F46",
-    "theme_color": "#10B981",
-    "description": "A new Flutter project.",
+    "background_color": "#1E3A8A",
+    "theme_color": "#3B82F6",
+    "description": "Your Smart Learning Companion - AI-powered student assistant app.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

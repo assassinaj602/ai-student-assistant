@@ -5,9 +5,7 @@
 			"label": "flutter_analyze_quick",
 			"type": "shell",
 			"command": "flutter analyze",
-			"problemMatcher": [
-				"$dart"
-			],
+			"problemMatcher": [],
 			"group": "build"
 		},
 		{
@@ -15,6 +13,74 @@
 			"type": "shell",
 			"command": "flutter pub get",
 			"group": "build"
+		},
+		{
+			"label": "flutter_run_web_openrouter",
+			"type": "shell",
+			"command": "flutter run -d chrome",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "flutter_run_web_openrouter_env",
+			"type": "shell",
+			"command": "flutter run -d chrome --dart-define OPENROUTER_API_KEY=$env:OPENROUTER_API_KEY",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "flutter_run_web_openrouter_prompt",
+			"type": "shell",
+			"command": "flutter run -d chrome --dart-define OPENROUTER_API_KEY=${input:OPENROUTER_API_KEY}",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "flutter_pub_get",
+			"type": "shell",
+			"command": "flutter pub get",
+			"group": "build"
+		},
+		{
+			"label": "flutter_analyze_quick",
+			"type": "shell",
+			"command": "flutter analyze",
+			"group": "build"
+		},
+		{
+			"label": "flutter_analyze_quick",
+			"type": "shell",
+			"command": "flutter analyze",
+			"group": "build"
+		},
+		{
+			"label": "flutter_analyze_quick",
+			"type": "shell",
+			"command": "flutter analyze",
+			"group": "build"
+		},
+		{
+			"label": "flutter_analyze_quick",
+			"type": "shell",
+			"command": "flutter analyze",
+			"group": "build"
+		},
+		{
+			"label": "flutter_analyze_quick",
+			"type": "shell",
+			"command": "flutter analyze",
+			"group": "build"
+		}
+	],
+	"inputs": [
+		{
+			"id": "OPENROUTER_API_KEY",
+			"type": "promptString",
+			"description": "Enter your OpenRouter API key (sk-or-...) for this run",
+			"password": true
 		}
 	]
 }

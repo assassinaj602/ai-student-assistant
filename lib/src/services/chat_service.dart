@@ -42,12 +42,13 @@ class ChatService {
     final userId = currentUserId;
     if (userId == null) return Stream.value([]);
 
+    // Use where filter only (no server-side orderBy) to avoid composite index,
+    // then sort by updatedAt desc on the client.
     return _conversationsCollection
         .where('userId', isEqualTo: userId)
-        .orderBy('updatedAt', descending: true)
         .snapshots()
-        .map(
-          (snapshot) =>
+        .map((snapshot) {
+          final list =
               snapshot.docs
                   .map(
                     (doc) => ChatConversation.fromMap(
@@ -55,8 +56,10 @@ class ChatService {
                       doc.id,
                     ),
                   )
-                  .toList(),
-        );
+                  .toList();
+          list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+          return list;
+        });
   }
 
   /// Get messages from a conversation
@@ -105,6 +108,68 @@ class ChatService {
     });
   }
 
+  /// Update conversation title
+  Future<void> updateConversationTitle(
+    String conversationId,
+    String title,
+  ) async {
+    await _conversationsCollection.doc(conversationId).update({
+      'title': title,
+      'updatedAt': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// Update conversation model selection (optional per-conversation)
+  Future<void> updateConversationModel(
+    String conversationId,
+    String? modelId,
+  ) async {
+    await _conversationsCollection.doc(conversationId).update({
+      'modelId': modelId,
+      'updatedAt': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// Fetch a single conversation by id
+  Future<ChatConversation?> getConversation(String conversationId) async {
+    try {
+      final doc = await _conversationsCollection.doc(conversationId).get();
+      if (!doc.exists) return null;
+      return ChatConversation.fromMap(
+        doc.data() as Map<String, dynamic>,
+        doc.id,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// If it's the first message, set an auto title from the user's text
+  Future<void> maybeSetTitleFromFirstMessage(
+    String conversationId,
+    String userText,
+  ) async {
+    final doc = await _conversationsCollection.doc(conversationId).get();
+    if (!doc.exists) return;
+    final data = doc.data() as Map<String, dynamic>;
+    final messageCount = (data['messageCount'] as int?) ?? 0;
+    if (messageCount > 0) return; // already has messages
+    final currentTitle = (data['title'] as String?) ?? '';
+    // Only overwrite default/auto titles
+    final isDefaultTitle =
+        currentTitle.startsWith('AI Chat') ||
+        currentTitle.startsWith('AI Assistant Chat') ||
+        currentTitle.trim().isEmpty;
+    if (!isDefaultTitle) return;
+
+    String title = userText.trim();
+    // Take first line and crop to ~40 chars
+    if (title.contains('\n')) title = title.split('\n').first.trim();
+    if (title.length > 40) title = title.substring(0, 40).trimRight() + '…';
+    if (title.isEmpty) title = 'New chat';
+    await updateConversationTitle(conversationId, title);
+  }
+
   /// Delete a conversation and all its messages
   Future<void> deleteConversation(String conversationId) async {
     // Delete all messages first
@@ -126,16 +191,23 @@ class ChatService {
     final userId = currentUserId;
     if (userId == null) throw Exception('User not authenticated');
 
-    // Try to get existing conversation
-    final existingConversations =
-        await _conversationsCollection
-            .where('userId', isEqualTo: userId)
-            .orderBy('updatedAt', descending: true)
-            .limit(1)
-            .get();
+    // Try to get existing conversation without requiring composite index
+    final snapshot =
+        await _conversationsCollection.where('userId', isEqualTo: userId).get();
 
-    if (existingConversations.docs.isNotEmpty) {
-      return existingConversations.docs.first.id;
+    if (snapshot.docs.isNotEmpty) {
+      // Pick the most recently updated locally
+      final conversations =
+          snapshot.docs
+              .map(
+                (doc) => ChatConversation.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                ),
+              )
+              .toList();
+      conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return conversations.first.id;
     }
 
     // Create new conversation if none exists

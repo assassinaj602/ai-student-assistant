@@ -1,13 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'ai_backend.dart';
-import 'gemini_ai_service.dart';
 import 'feature_flags_service.dart';
+import 'openrouter_ai_service.dart';
+import 'model_selection.dart';
 
 /// Chooses which AI backend to expose based on feature flags.
 final aiBackendProvider = Provider<AIBackend>((ref) {
-  // Currently only Gemini. In future, inspect flags to swap.
-  ref.watch(
-    featureFlagsProvider,
-  ); // Currently unused; placeholder for future backend switching.
-  return ref.watch(geminiAIServiceProvider);
+  // Observe flags (reserved for future model selection)
+  ref.watch(featureFlagsProvider);
+
+  // If Auto is selected, use rotation, else direct service.
+  final selected = ref.watch(selectedModelIdProvider);
+  if (selected == kAutoModelId) {
+    return ref.watch(rotatingAIBackendProvider);
+  }
+  return ref.watch(openRouterAIServiceProvider);
 });

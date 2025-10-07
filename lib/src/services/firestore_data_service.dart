@@ -205,7 +205,7 @@ class FirestoreDataService {
   Future<List<flashcard_model.Flashcard>> generateFlashcardsFromNote(
     String noteId,
     String content, {
-    int count = 5,
+    int count = 10,
   }) async {
     try {
       // Generate flashcards using AI

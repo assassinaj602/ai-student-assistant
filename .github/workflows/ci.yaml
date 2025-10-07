@@ -36,14 +36,22 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Detect backend folder
+        id: backend-check
+        run: |
+          if [ -d "backend" ]; then echo "exists=true" >> $GITHUB_OUTPUT; else echo "exists=false" >> $GITHUB_OUTPUT; fi
+
       - name: Install backend dependencies
+        if: steps.backend-check.outputs.exists == 'true'
         working-directory: ./backend
         run: npm ci
 
       - name: Lint backend
+        if: steps.backend-check.outputs.exists == 'true'
         working-directory: ./backend
         run: npm run lint --silent || true
 
       - name: Run backend tests
+        if: steps.backend-check.outputs.exists == 'true'
         working-directory: ./backend
         run: npm test --silent || true

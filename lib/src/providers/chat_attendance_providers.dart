@@ -3,6 +3,7 @@ import '../services/chat_service.dart';
 import '../services/attendance_service.dart';
 import '../models/chat_message.dart';
 import '../models/attendance_record.dart';
+import '../services/model_selection.dart';
 
 /// Provider for ChatService
 final chatServiceProvider = Provider<ChatService>((ref) {
@@ -82,7 +83,7 @@ final chatActionsProvider = Provider<ChatActions>((ref) {
 /// Attendance actions provider for managing attendance operations
 final attendanceActionsProvider = Provider<AttendanceActions>((ref) {
   final attendanceService = ref.read(attendanceServiceProvider);
-  return AttendanceActions(attendanceService, ref);
+  return AttendanceActions(attendanceService);
 });
 
 /// Chat actions class for encapsulating chat operations
@@ -98,6 +99,13 @@ class ChatActions {
       final conversationId =
           await _chatService.getOrCreateDefaultConversation();
       _ref.read(currentConversationIdProvider.notifier).state = conversationId;
+      // Load saved model for this conversation if present
+      final convo = await _chatService.getConversation(conversationId);
+      final modelId = convo?.modelId;
+      if (modelId != null && modelId.isNotEmpty) {
+        // ignore: avoid_async_in_sync
+        _ref.read(selectedModelIdProvider.notifier).setModel(modelId);
+      }
     } catch (e) {
       print('Error initializing chat: $e');
     }
@@ -113,6 +121,13 @@ class ChatActions {
     }
 
     final activeConversationId = _ref.read(currentConversationIdProvider)!;
+    // If this is the user's first message, set a helpful title from it
+    if (isUser) {
+      await _chatService.maybeSetTitleFromFirstMessage(
+        activeConversationId,
+        text,
+      );
+    }
     await _chatService.addMessage(
       conversationId: activeConversationId,
       text: text,
@@ -129,6 +144,13 @@ class ChatActions {
   /// Switch to a different conversation
   void switchConversation(String conversationId) {
     _ref.read(currentConversationIdProvider.notifier).state = conversationId;
+    // Fire-and-forget: apply the conversation's model to selection if set
+    _chatService.getConversation(conversationId).then((convo) {
+      final modelId = convo?.modelId;
+      if (modelId != null && modelId.isNotEmpty) {
+        _ref.read(selectedModelIdProvider.notifier).setModel(modelId);
+      }
+    });
   }
 
   /// Delete a conversation
@@ -141,14 +163,24 @@ class ChatActions {
       _ref.read(currentConversationIdProvider.notifier).state = null;
     }
   }
+
+  /// Rename a conversation (e.g., via sidebar overflow menu)
+  Future<void> renameConversation(String conversationId, String title) async {
+    await _chatService.updateConversationTitle(conversationId, title);
+  }
+
+  /// Persist selected model for the current conversation (optional)
+  Future<void> setConversationModel(String modelId) async {
+    final id = _ref.read(currentConversationIdProvider);
+    if (id == null) return;
+    await _chatService.updateConversationModel(id, modelId);
+  }
 }
 
 /// Attendance actions class for encapsulating attendance operations
 class AttendanceActions {
   final AttendanceService _attendanceService;
-  final ProviderRef _ref;
-
-  AttendanceActions(this._attendanceService, this._ref);
+  AttendanceActions(this._attendanceService);
 
   /// Mark attendance for a course
   Future<void> markAttendance({

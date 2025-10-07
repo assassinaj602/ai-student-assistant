@@ -74,7 +74,10 @@ class _NoteEditorState extends ConsumerState<NoteEditor> {
 
     try {
       final backend = ref.read(aiBackendProvider);
-      final summary = await backend.summarize(_bodyController.text);
+      final summary = await backend.summarize(
+        _bodyController.text,
+        maxWords: 350,
+      );
 
       if (mounted) {
         showDialog(
@@ -199,9 +202,21 @@ class _NoteEditorState extends ConsumerState<NoteEditor> {
       }
     } catch (e) {
       if (mounted) {
+        final msg = e.toString();
+        final isQuota =
+            msg.contains('quota') ||
+            msg.contains('429') ||
+            msg.contains('Too Many Requests') ||
+            msg.contains('rate limit') ||
+            msg.contains('billing') ||
+            msg.contains('250');
+        final friendly =
+            isQuota
+                ? 'Daily AI quota limit reached. Please try again later.'
+                : 'Error generating summary: $e';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error generating summary: $e'),
+            content: Text(friendly),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );

@@ -255,7 +255,7 @@ class FirebaseService {
   }
 
   /// Batch save flashcards with history tracking
-  Future<List<String>> saveFlashcardsWithHistory({
+  Future<String> saveFlashcardsWithHistory({
     required List<Flashcard> flashcards,
     required String sourceText,
     required String sourceTitle,
@@ -300,7 +300,7 @@ class FirebaseService {
     batch.set(generationDocRef, generation.toMap());
 
     await batch.commit();
-    return flashcardIds;
+    return generationDocRef.id;
   }
 
   // FLASHCARD GENERATION HISTORY
@@ -352,6 +352,39 @@ class FirebaseService {
         .collection('flashcard_generations')
         .doc(generationId)
         .delete();
+  }
+
+  /// Fetch a list of flashcards by their IDs (for reviewing a generation)
+  Future<List<Flashcard>> getFlashcardsByIds(List<String> ids) async {
+    if (_userId == null) return [];
+    if (ids.isEmpty) return [];
+
+    // Firestore whereIn supports up to 10 items per query; chunk if needed
+    const chunkSize = 10;
+    final chunks = <List<String>>[];
+    for (var i = 0; i < ids.length; i += chunkSize) {
+      chunks.add(
+        ids.sublist(i, i + chunkSize > ids.length ? ids.length : i + chunkSize),
+      );
+    }
+
+    final results = <Flashcard>[];
+    for (final chunk in chunks) {
+      final snapshot =
+          await _firestore
+              .collection('users')
+              .doc(_userId)
+              .collection('flashcards')
+              .where(FieldPath.documentId, whereIn: chunk)
+              .get();
+      results.addAll(
+        snapshot.docs.map((d) => Flashcard.fromMap(d.data(), d.id)),
+      );
+    }
+
+    // Preserve the original order of ids where possible
+    final byId = {for (final f in results) f.id: f};
+    return ids.map((id) => byId[id]).whereType<Flashcard>().toList();
   }
 
   // AI QUOTA MANAGEMENT

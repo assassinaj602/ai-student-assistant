@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../services/firebase_service.dart';
 import '../models/flashcard_generation.dart';
+import 'flashcard_review_screen.dart';
 
 /// Screen showing flashcard generation history
 class FlashcardHistoryScreen extends ConsumerWidget {
@@ -151,6 +152,14 @@ class FlashcardHistoryScreen extends ConsumerWidget {
           itemBuilder:
               (context) => [
                 const PopupMenuItem(
+                  value: 'review',
+                  child: ListTile(
+                    leading: Icon(Icons.replay_circle_filled),
+                    title: Text('Review these cards'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
                   value: 'delete',
                   child: ListTile(
                     leading: Icon(Icons.delete),
@@ -160,7 +169,13 @@ class FlashcardHistoryScreen extends ConsumerWidget {
                 ),
               ],
           onSelected: (value) {
-            if (value == 'delete') {
+            if (value == 'review') {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FlashcardReviewScreen(generation: generation),
+                ),
+              );
+            } else if (value == 'delete') {
               _deleteGeneration(context, generation, ref);
             }
           },

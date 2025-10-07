@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "chat_conversations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "attendance_records",
       "queryScope": "COLLECTION",
       "fields": [

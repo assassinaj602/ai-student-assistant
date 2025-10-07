@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:google_sign_in/google_sign_in.dart';
@@ -34,10 +35,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Initialize auth state listener
   void _init() {
+    print('Initializing auth state listener...');
+
     auth.FirebaseAuth.instance.authStateChanges().listen((firebaseUser) {
+      print('Auth state changed: ${firebaseUser?.email ?? 'null'}');
       if (firebaseUser != null) {
+        print('User signed in, handling user data...');
         _handleUserSignedIn(firebaseUser);
       } else {
+        print('No user, setting empty auth state');
+        state = const AuthState();
+      }
+    });
+
+    // Set initial state to not loading
+    Timer(const Duration(milliseconds: 100), () {
+      if (state.isLoading && state.user == null) {
+        print('Setting initial non-loading state');
         state = const AuthState();
       }
     });
@@ -46,7 +60,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Handle user signed in event
   Future<void> _handleUserSignedIn(auth.User firebaseUser) async {
     try {
-      state = state.copyWith(isLoading: true);
+      print('Handling signed in user: ${firebaseUser.email}');
 
       final user = User(
         id: firebaseUser.uid,
@@ -57,15 +71,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
         lastLoginAt: DateTime.now(),
       );
 
-      // Save/update user in Firestore
-      await _firebaseService.saveUser(user);
-
+      // Set user immediately to prevent infinite loading
+      print('Setting auth state with user immediately');
       state = AuthState(user: user);
+
+      // Save to Firestore in background (don't block UI)
+      _firebaseService
+          .saveUser(user)
+          .timeout(const Duration(seconds: 5))
+          .catchError((e) {
+            print(
+              'Background Firestore save failed: $e (UI continues normally)',
+            );
+          });
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Failed to load user data: $e',
+      print('Error creating user object: $e');
+      // Still set a basic user to prevent infinite loading
+      final user = User(
+        id: firebaseUser.uid,
+        email: firebaseUser.email!,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        createdAt: DateTime.now(),
+        lastLoginAt: DateTime.now(),
       );
+      state = AuthState(user: user);
     }
   }
 
@@ -81,6 +111,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       // State will be updated by auth state listener
     } on auth.FirebaseAuthException catch (e) {
+      print('Email sign-in error: code=${e.code}, message=${e.message}');
       state = state.copyWith(isLoading: false, error: _getAuthErrorMessage(e));
     } catch (e) {
       state = state.copyWith(
@@ -113,6 +144,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // Stop loading; UI will remain on login screen via authState stream (null user)
       state = state.copyWith(isLoading: false);
     } on auth.FirebaseAuthException catch (e) {
+      print('Email sign-up error: code=${e.code}, message=${e.message}');
       state = state.copyWith(isLoading: false, error: _getAuthErrorMessage(e));
     } catch (e) {
       state = state.copyWith(
@@ -125,35 +157,46 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Sign in with Google
   Future<void> signInWithGoogle() async {
     try {
+      print('Starting Google sign-in...');
       state = state.copyWith(isLoading: true, error: null);
 
       if (kIsWeb) {
-        // On web, use Firebase Auth popup/redirect flow directly
+        // For web, use Firebase Auth directly - avoid google_sign_in_web issues
+        print('Using Firebase Auth popup for web');
         final provider = auth.GoogleAuthProvider();
         provider.addScope('email');
-        await auth.FirebaseAuth.instance.signInWithPopup(provider);
+        provider.setCustomParameters({'prompt': 'select_account'});
+
+        final result = await auth.FirebaseAuth.instance.signInWithPopup(
+          provider,
+        );
+        print('Firebase popup sign-in successful: ${result.user?.email}');
       } else {
-        // Mobile: use google_sign_in to retrieve Google credentials
+        // For mobile, use google_sign_in
+        print('Using GoogleSignIn plugin for mobile');
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
         if (googleUser == null) {
-          // User cancelled the sign-in
+          print('User cancelled Google sign-in');
           state = state.copyWith(isLoading: false);
           return;
         }
+
         final GoogleSignInAuthentication googleAuth =
             await googleUser.authentication;
         final credential = auth.GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
+
         await auth.FirebaseAuth.instance.signInWithCredential(credential);
       }
 
-      // State will be updated by auth state listener
+      print('Google sign-in complete, waiting for auth state change...');
     } catch (e) {
+      print('Google sign-in error: $e');
       state = state.copyWith(
         isLoading: false,
-        error: 'Google sign-in failed: $e',
+        error: 'Google sign-in failed. Please try again.',
       );
     }
   }

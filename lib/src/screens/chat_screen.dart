@@ -5,8 +5,10 @@ import '../models/chat_message.dart';
 import '../providers/chat_attendance_providers.dart';
 import '../services/ai_providers.dart';
 import '../services/ai_backend.dart';
+import '../services/model_selection.dart';
+// Offline fallback removed per policy: do not generate dummy content
 
-/// Chat screen for AI-powered conversations using direct Gemini integration
+/// Chat screen for AI-powered conversations using the unified AI backend
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
@@ -15,6 +17,7 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   bool _isLoading = false;
@@ -69,16 +72,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      // Send error message to Firebase
+      final friendly = 'AI error: ${e.toString()}';
+
+      // Send message (fallback or error) to Firebase
       try {
         final chatActions = ref.read(chatActionsProvider);
-        await chatActions.sendMessage('Error: ${e.toString()}', false);
+        await chatActions.sendMessage(friendly, false);
       } catch (_) {
-        // If we can't save to Firebase, at least show the error
+        // If we can't save to Firebase, show the error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            content: Text('Chat error: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -130,10 +135,70 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.of(context).size.width >= 840;
+    final sidebar = _Sidebar(
+      onNewChat: () => ref.read(chatActionsProvider).createNewConversation(),
+      onSelect: (id) => ref.read(chatActionsProvider).switchConversation(id),
+      onRename: (id) async {
+        final title = await _promptForTitle(context);
+        if (title != null && title.trim().isNotEmpty) {
+          await ref.read(chatActionsProvider).renameConversation(id, title);
+        }
+      },
+      onDelete: (id) async {
+        final confirmed = await _confirmDelete(context);
+        if (confirmed == true) {
+          await ref.read(chatActionsProvider).deleteConversation(id);
+        }
+      },
+    );
+
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('AI Chat'),
+        toolbarHeight: 44,
+        titleSpacing: 8,
+        title: const Text(
+          'AI Chat',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        leading:
+            isWide
+                ? null
+                : IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                ),
         actions: [
+          // Model picker (compact)
+          Consumer(
+            builder: (context, ref, _) {
+              final options = ref.watch(availableModelOptionsProvider);
+              ref.watch(selectedModelIdProvider);
+              return PopupMenuButton<String>(
+                tooltip: 'Model',
+                position: PopupMenuPosition.under,
+                icon: const Icon(Icons.memory),
+                onSelected: (value) {
+                  ref.read(selectedModelIdProvider.notifier).setModel(value);
+                  // Persist to conversation for history/consistency
+                  ref.read(chatActionsProvider).setConversationModel(value);
+                  // Reset cached backend to ensure next call uses new model
+                  setState(() => _backend = null);
+                },
+                itemBuilder: (context) {
+                  return options
+                      .map(
+                        (o) => PopupMenuItem<String>(
+                          value: o.id,
+                          child: Text(o.label, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
+                      .toList();
+                },
+              );
+            },
+          ),
           Consumer(
             builder: (context, ref, child) {
               final messagesAsync = ref.watch(conversationMessagesProvider);
@@ -143,134 +208,230 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   data: (messages) => messages.isNotEmpty ? _clearChat : null,
                   orElse: () => null,
                 ),
-                tooltip: 'Clear Chat',
+                tooltip: 'New Chat',
               );
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'New Chat',
+            onPressed:
+                () => ref.read(chatActionsProvider).createNewConversation(),
+          ),
         ],
       ),
-      body: Column(
+      drawer: isWide ? null : Drawer(child: sidebar),
+      body: Row(
         children: [
-          // Messages list
-          Expanded(
-            child: Consumer(
-              builder: (context, ref, child) {
-                final messagesAsync = ref.watch(conversationMessagesProvider);
-
-                return messagesAsync.when(
-                  data: (messages) {
-                    if (messages.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'Start a conversation with AI!',
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                      );
-                    }
-
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: messages.length + (_isLoading ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == messages.length && _isLoading) {
-                          return const _TypingIndicator();
-                        }
-                        final message = messages[index];
-                        return _MessageBubble(message: message);
-                      },
-                    );
-                  },
-                  loading:
-                      () => const Center(child: CircularProgressIndicator()),
-                  error:
-                      (error, stack) => Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 48,
-                              color: Colors.red[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Error loading messages',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              error.toString(),
-                              style: Theme.of(context).textTheme.bodySmall,
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed:
-                                  () =>
-                                      ref.refresh(conversationMessagesProvider),
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      ),
-                );
-              },
-            ),
-          ),
-          // Input area
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              border: Border(
-                top: BorderSide(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                ),
+          if (isWide)
+            SizedBox(
+              width: 320,
+              child: Material(
+                color: Theme.of(context).colorScheme.surfaceContainerLowest,
+                child: SafeArea(child: sidebar),
               ),
             ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration(
-                        hintText: 'Ask me anything...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                      ),
-                      maxLines: null,
-                      keyboardType: TextInputType.multiline,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
-                      enabled: !_isLoading,
+          Expanded(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final messagesAsync = ref.watch(
+                        conversationMessagesProvider,
+                      );
+
+                      return messagesAsync.when(
+                        data: (messages) {
+                          if (messages.isEmpty) {
+                            return const Center(
+                              child: Text(
+                                'Start a conversation with AI!',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            );
+                          }
+
+                          return ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(16),
+                            itemCount: messages.length + (_isLoading ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == messages.length && _isLoading) {
+                                return const _TypingIndicator();
+                              }
+                              final message = messages[index];
+                              return _MessageBubble(message: message);
+                            },
+                          );
+                        },
+                        loading:
+                            () => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                        error:
+                            (error, stack) => Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.error_outline,
+                                    size: 48,
+                                    color: Colors.red[400],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Error loading messages',
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    error.toString(),
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                    onPressed:
+                                        () => ref.refresh(
+                                          conversationMessagesProvider,
+                                        ),
+                                    child: const Text('Retry'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                      );
+                    },
+                  ),
+                ),
+                _inputBar(context),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _inputBar(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outline.withOpacity(0.12)),
+        ),
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _messageController,
+                decoration: InputDecoration(
+                  hintText: 'Ask me anything...',
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.25),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.outlineVariant.withOpacity(0.3),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  FloatingActionButton(
-                    onPressed: _isLoading ? null : _sendMessage,
-                    mini: true,
-                    child:
-                        _isLoading
-                            ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                            : const Icon(Icons.send),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.primary.withOpacity(0.6),
+                    ),
                   ),
-                ],
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _sendMessage(),
+                enabled: !_isLoading,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            FloatingActionButton(
+              onPressed: _isLoading ? null : _sendMessage,
+              mini: true,
+              backgroundColor: theme.colorScheme.primary,
+              child:
+                  _isLoading
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                      : const Icon(Icons.send, color: Colors.white),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Future<String?> _promptForTitle(BuildContext context) async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Rename chat'),
+            content: TextField(
+              controller: controller,
+              decoration: const InputDecoration(hintText: 'Enter a title'),
+              autofocus: true,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, controller.text.trim()),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<bool?> _confirmDelete(BuildContext context) async {
+    return showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete conversation'),
+            content: const Text(
+              'This will delete this chat and all its messages.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
     );
   }
 }
@@ -514,6 +675,98 @@ class _TypingDotState extends State<_TypingDot>
               ),
             ),
           ),
+    );
+  }
+}
+
+/// Sidebar listing user's conversations (ChatGPT-like)
+class _Sidebar extends ConsumerWidget {
+  final VoidCallback onNewChat;
+  final void Function(String id) onSelect;
+  final Future<void> Function(String id) onRename;
+  final Future<void> Function(String id) onDelete;
+
+  const _Sidebar({
+    required this.onNewChat,
+    required this.onSelect,
+    required this.onRename,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final conversationsAsync = ref.watch(userConversationsProvider);
+    final currentId = ref.watch(currentConversationIdProvider);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onNewChat,
+                  icon: const Icon(Icons.add),
+                  label: const Text('New chat'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: conversationsAsync.when(
+            data: (items) {
+              if (items.isEmpty) {
+                return const Center(child: Text('No conversations yet'));
+              }
+              return ListView.builder(
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final c = items[index];
+                  final selected = c.id == currentId;
+                  return ListTile(
+                    selected: selected,
+                    leading: const Icon(Icons.chat_bubble_outline),
+                    title: Text(
+                      c.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      '${c.messageCount} messages',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    onTap: () => onSelect(c.id),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) async {
+                        if (value == 'rename') {
+                          await onRename(c.id);
+                        } else if (value == 'delete') {
+                          await onDelete(c.id);
+                        }
+                      },
+                      itemBuilder:
+                          (context) => const [
+                            PopupMenuItem(
+                              value: 'rename',
+                              child: Text('Rename'),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete'),
+                            ),
+                          ],
+                    ),
+                  );
+                },
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, st) => Center(child: Text('Error: $e')),
+          ),
+        ),
+      ],
     );
   }
 }

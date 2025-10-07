@@ -19,11 +19,11 @@ abstract class AIBackend {
   Future<String> chat(String prompt, {List<AIMessage> history = const []});
 
   /// Summarize arbitrary text (maxWords is a soft target)
-  Future<String> summarize(String text, {int maxWords = 150});
+  Future<String> summarize(String text, {int maxWords = 300});
 
   /// Generate flashcards from study content
   Future<List<models.Flashcard>> generateFlashcards(
     String content, {
-    int count = 5,
+    int count = 10,
   });
 }

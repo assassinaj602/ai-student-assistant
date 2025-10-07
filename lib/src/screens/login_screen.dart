@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../providers/auth_provider.dart';
 
 /// Login screen with email/password and Google sign-in options
@@ -128,7 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Icon(
                 Icons.school,
                 size: 80,
-                color: Theme.of(context).primaryColor,
+                color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 16),
               Text(
@@ -136,7 +137,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor,
+                  color: Theme.of(context).colorScheme.onBackground,
                 ),
               ),
               Text(
@@ -162,10 +163,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: TextStyle(
                         color:
                             _isLogin
-                                ? Theme.of(context).primaryColor
+                                ? Theme.of(context).colorScheme.primary
                                 : Theme.of(
                                   context,
-                                ).colorScheme.onSurface.withOpacity(0.5),
+                                ).colorScheme.onSurface.withOpacity(0.6),
                         fontWeight:
                             _isLogin ? FontWeight.bold : FontWeight.normal,
                       ),
@@ -179,10 +180,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: TextStyle(
                         color:
                             !_isLogin
-                                ? Theme.of(context).primaryColor
+                                ? Theme.of(context).colorScheme.primary
                                 : Theme.of(
                                   context,
-                                ).colorScheme.onSurface.withOpacity(0.5),
+                                ).colorScheme.onSurface.withOpacity(0.6),
                         fontWeight:
                             !_isLogin ? FontWeight.bold : FontWeight.normal,
                       ),
@@ -295,12 +296,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 height: 50,
                 child: OutlinedButton.icon(
                   onPressed: _isLoading ? null : _handleGoogleSignIn,
-                  icon: const Icon(
-                    Icons.login,
-                  ), // In a real app, use Google icon
+                  icon: const FaIcon(FontAwesomeIcons.google, size: 18),
                   label: const Text('Continue with Google'),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Theme.of(context).primaryColor),
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    foregroundColor: Theme.of(context).colorScheme.onSurface,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -314,7 +317,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.5),
+                  ).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
             ],

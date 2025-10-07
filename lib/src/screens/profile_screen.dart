@@ -289,25 +289,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  /// Reset form to empty values
-  void _resetForm() {
-    setState(() {
-      _dobController.clear();
-      _phoneController.clear();
-      _bioController.clear();
-      _schoolController.clear();
-      _gradeController.clear();
-      _majorController.clear();
-      _studentIdController.clear();
-      _emergencyContactController.clear();
-      _addressController.clear();
-      _selectedDate = null;
-      _selectedEducationLevel = 'High School';
-    });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Form reset to empty values')));
-  }
+  // Removed unused _resetForm method
 
   @override
   Widget build(BuildContext context) {

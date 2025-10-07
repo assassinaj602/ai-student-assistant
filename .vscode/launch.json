@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "AI Student Assistant (Web, OpenRouter)",
+      "type": "dart",
+      "request": "launch",
+      "flutterMode": "debug",
+      "args": [
+        "-d",
+        "chrome",
+  // dotenv-based key loading; no dart-define required
+      ]
+    },
+    {
+      "name": "AI Student Assistant (Android, OpenRouter)",
+      "type": "dart",
+      "request": "launch",
+      "flutterMode": "debug",
+      "args": [
+        "-d",
+        "android",
+  // dotenv-based key loading; no dart-define required
+      ]
+    }
+  ]
+}

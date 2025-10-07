@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
@@ -102,8 +101,8 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
               // Action buttons row
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal: 12,
+                  vertical: 6,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -156,10 +155,16 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
                     context,
                   ).colorScheme.onSurface.withOpacity(0.6),
                   indicatorColor: Theme.of(context).colorScheme.primary,
-                  indicatorWeight: 3.0,
+                  indicatorWeight: 2.0,
                   tabs: const [
-                    Tab(icon: Icon(Icons.calendar_month), text: 'Calendar'),
-                    Tab(icon: Icon(Icons.view_agenda), text: 'Schedule'),
+                    Tab(
+                      icon: Icon(Icons.calendar_month, size: 18),
+                      text: 'Calendar',
+                    ),
+                    Tab(
+                      icon: Icon(Icons.view_agenda, size: 18),
+                      text: 'Schedule',
+                    ),
                   ],
                 ),
               ),
@@ -217,23 +222,28 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
   Widget _buildCalendarView(List<Course> courses) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isCompact = constraints.maxHeight < 500;
         return Column(
           children: [
             // Calendar section - smaller
             Container(
               constraints: BoxConstraints(
-                maxHeight:
-                    constraints.maxHeight * 0.35, // Reduced from 0.6 to 0.35
+                // Reduce overall calendar height to free more space for list
+                maxHeight: isCompact ? 150 : constraints.maxHeight * 0.25,
               ),
               child: TableCalendar<Course>(
                 firstDay: DateTime.utc(2020, 1, 1),
                 lastDay: DateTime.utc(2030, 12, 31),
                 focusedDay: _focusedDay,
-                calendarFormat: _calendarFormat,
+                // Force week view in very compact layouts to avoid overflow
+                calendarFormat:
+                    isCompact ? CalendarFormat.week : _calendarFormat,
                 selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                 eventLoader: (day) => _getEventsForDay(day, courses),
                 startingDayOfWeek: StartingDayOfWeek.monday,
                 calendarStyle: CalendarStyle(
+                  // Reduce row height for compact spaces
+                  cellMargin: const EdgeInsets.symmetric(vertical: 2),
                   outsideDaysVisible: false,
                   weekendTextStyle: TextStyle(
                     color: Theme.of(context).colorScheme.error,
@@ -255,7 +265,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
                   ),
                 ),
                 headerStyle: HeaderStyle(
-                  formatButtonVisible: true,
+                  formatButtonVisible: !isCompact,
                   titleCentered: true,
                   formatButtonShowsNext: false,
                   formatButtonDecoration: BoxDecoration(
@@ -274,16 +284,18 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
                   });
                 },
                 onFormatChanged: (format) {
-                  setState(() {
-                    _calendarFormat = format;
-                  });
+                  if (!isCompact) {
+                    setState(() {
+                      _calendarFormat = format;
+                    });
+                  }
                 },
                 onPageChanged: (focusedDay) {
                   _focusedDay = focusedDay;
                 },
               ),
             ),
-            const SizedBox(height: 8.0),
+            const SizedBox(height: 4.0),
             Expanded(child: _buildSelectedDayEvents(courses)),
           ],
         );
@@ -339,8 +351,8 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
         // Date header - more compact
         Container(
           width: double.infinity,
-          margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -357,9 +369,9 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
               Icon(
                 Icons.calendar_today,
                 color: Theme.of(context).colorScheme.onPrimaryContainer,
-                size: 20,
+                size: 16,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,7 +402,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen>
 
         // All Courses Section Header
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: Row(
             children: [
               Icon(

@@ -4,7 +4,6 @@ import '../models/course.dart';
 import '../models/attendance_record.dart';
 import '../models/note.dart';
 import '../providers/chat_attendance_providers.dart';
-import '../services/attendance_service.dart';
 import 'note_editor.dart';
 
 /// Class detail screen showing course information and attendance tracking

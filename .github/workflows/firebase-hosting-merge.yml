@@ -22,9 +22,15 @@ jobs:
         run: flutter pub get
       
       - name: Build Flutter Web
-        run: flutter build web --release --dart-define=GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
+        run: |
+          # Build the Flutter web app with OpenRouter credentials injected at build time
+          # OPENROUTER_MODEL is optional; defaults to DeepSeek free chat model if not set
+          flutter build web --release \
+            --dart-define=OPENROUTER_API_KEY="$OPENROUTER_API_KEY" \
+            --dart-define=OPENROUTER_MODEL="${OPENROUTER_MODEL:-deepseek/deepseek-chat-v3.1:free}"
       
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:

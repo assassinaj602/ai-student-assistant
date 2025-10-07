@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme.dart';
@@ -20,6 +21,7 @@ class AIStudentAssistantApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       home: authState.when(
         data: (user) {
+          print('Auth state resolved with user: ${user?.email ?? 'null'}');
           // If user is logged in, show home screen
           if (user != null) {
             return const HomeScreen();
@@ -27,10 +29,46 @@ class AIStudentAssistantApp extends ConsumerWidget {
           // If no user, show login screen
           return const LoginScreen();
         },
-        loading: () => const _LoadingScreen(),
-        error: (error, stackTrace) => _ErrorScreen(error: error.toString()),
+        loading: () {
+          print('Auth state is loading...');
+          return const _LoadingScreenWithTimeout();
+        },
+        error: (error, stackTrace) {
+          print('Auth state error: $error');
+          return _ErrorScreen(error: error.toString());
+        },
       ),
     );
+  }
+}
+
+/// Loading screen with timeout fallback to prevent infinite loading
+class _LoadingScreenWithTimeout extends StatefulWidget {
+  const _LoadingScreenWithTimeout();
+
+  @override
+  State<_LoadingScreenWithTimeout> createState() =>
+      _LoadingScreenWithTimeoutState();
+}
+
+class _LoadingScreenWithTimeoutState extends State<_LoadingScreenWithTimeout> {
+  @override
+  void initState() {
+    super.initState();
+    // Force navigation to login after 10 seconds if still loading
+    Timer(const Duration(seconds: 10), () {
+      if (mounted) {
+        print('Loading timeout reached, forcing navigation to login');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const _LoadingScreen();
   }
 }
 

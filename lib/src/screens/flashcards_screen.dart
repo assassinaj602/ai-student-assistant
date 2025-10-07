@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/ai_providers.dart';
 import '../models/flashcard.dart' as models;
 import '../services/firebase_service.dart';
+import '../providers/flashcards_providers.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'flashcard_history_screen.dart';
 
@@ -15,11 +16,19 @@ class FlashcardsScreen extends ConsumerStatefulWidget {
 }
 
 class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
-  final PageController _pageController = PageController();
+  late PageController _pageController;
   final List<models.Flashcard> _flashcards = [];
   int _currentIndex = 0;
   bool _showAnswer = false;
   bool _isLoading = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  String? _lastGenerationId;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: 0);
+  }
 
   @override
   void dispose() {
@@ -99,11 +108,11 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
 
     try {
       final backend = ref.read(aiBackendProvider);
-      final flashcards = await backend.generateFlashcards(text);
+      final flashcards = await backend.generateFlashcards(text, count: 10);
 
       // Persist generated flashcards with history tracking
       final firebase = ref.read(firebaseServiceProvider);
-      await firebase.saveFlashcardsWithHistory(
+      final generationId = await firebase.saveFlashcardsWithHistory(
         flashcards:
             flashcards
                 .map(
@@ -126,6 +135,8 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
       );
 
       if (mounted) {
+        // Select the newly created generation in the sidebar
+        ref.read(currentGenerationIdProvider.notifier).state = generationId;
         setState(() {
           _flashcards.clear();
           _flashcards.addAll(flashcards);
@@ -147,9 +158,21 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
+        final msg = e.toString();
+        final isQuota =
+            msg.contains('quota') ||
+            msg.contains('429') ||
+            msg.contains('Too Many Requests') ||
+            msg.contains('rate limit') ||
+            msg.contains('billing') ||
+            msg.contains('250');
+        final friendly =
+            isQuota
+                ? 'Daily AI quota limit reached. Please try again later.'
+                : 'Error generating flashcards: $e';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error generating flashcards: $e'),
+            content: Text(friendly),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -159,22 +182,18 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
 
   /// Navigate to next card
   void _nextCard() {
-    if (_currentIndex < _flashcards.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
+    _pageController.nextPage(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   /// Navigate to previous card
   void _previousCard() {
-    if (_currentIndex > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
+    _pageController.previousPage(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   /// Toggle answer visibility
@@ -191,44 +210,112 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Custom header
-        Container(
-          color: Theme.of(context).colorScheme.surface,
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Text(
-                'Flashcards',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
+    // If the selected generation changed, reset to the first card
+    final currentGenId = ref.watch(currentGenerationIdProvider);
+    if (currentGenId != _lastGenerationId) {
+      _lastGenerationId = currentGenId;
+      final oldController = _pageController;
+      _pageController = PageController(initialPage: 0);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        oldController.dispose();
+        setState(() {
+          _currentIndex = 0;
+          _showAnswer = false;
+        });
+      });
+    }
+    final isWide = MediaQuery.of(context).size.width >= 840;
+    final sidebar = _FlashcardsSidebar(
+      onNewGeneration: _generateFlashcards,
+      onSelect: (id) {
+        ref.read(currentGenerationIdProvider.notifier).state = id;
+        if (!isWide) {
+          _scaffoldKey.currentState?.closeDrawer();
+        }
+      },
+      onDelete: (id) async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('Delete generation'),
+                content: const Text('This will remove this generation record.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+        );
+        if (confirmed == true) {
+          await ref.read(firebaseServiceProvider).deleteFlashcardGeneration(id);
+          if (ref.read(currentGenerationIdProvider) == id) {
+            ref.read(currentGenerationIdProvider.notifier).state = null;
+          }
+        }
+      },
+    );
+
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: const Text('Flashcards'),
+        leading:
+            isWide
+                ? null
+                : IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 ),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.history),
-                onPressed: _showGenerationHistory,
-                tooltip: 'Generation History',
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: _generateFlashcards,
-                tooltip: 'Generate Flashcards',
-              ),
-            ],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'New generation',
+            onPressed: _generateFlashcards,
           ),
-        ),
-        Expanded(
-          child:
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _flashcards.isEmpty
-                  ? _buildEmptyState()
-                  : _buildFlashcardView(),
-        ),
-      ],
+        ],
+      ),
+      drawer: isWide ? null : Drawer(child: sidebar),
+      body: Row(
+        children: [
+          if (isWide)
+            SizedBox(
+              width: 320,
+              child: Material(
+                color: Theme.of(context).colorScheme.surfaceContainerLowest,
+                child: SafeArea(child: sidebar),
+              ),
+            ),
+          Expanded(
+            child: Consumer(
+              builder: (context, ref, _) {
+                final selected = ref.watch(selectedGenerationCardsProvider);
+                return selected.when(
+                  data: (cards) {
+                    // If a generation is selected, play its cards; otherwise show current session state
+                    final usingSelected =
+                        ref.read(currentGenerationIdProvider) != null;
+                    final list = usingSelected ? cards : _flashcards;
+                    if (_isLoading)
+                      return const Center(child: CircularProgressIndicator());
+                    if (list.isEmpty) return _buildEmptyState();
+                    return _buildFlashcardViewWith(list);
+                  },
+                  loading:
+                      () => const Center(child: CircularProgressIndicator()),
+                  error: (e, st) => Center(child: Text('Error: $e')),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -283,7 +370,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
     );
   }
 
-  Widget _buildFlashcardView() {
+  Widget _buildFlashcardViewWith(List<models.Flashcard> source) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -296,7 +383,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Card ${_currentIndex + 1} of ${_flashcards.length}',
+                    'Card ${_currentIndex + 1} of ${source.length}',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -356,7 +443,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
               ),
               const SizedBox(height: 8),
               LinearProgressIndicator(
-                value: (_currentIndex + 1) / _flashcards.length,
+                value: source.isEmpty ? 0 : (_currentIndex + 1) / source.length,
                 backgroundColor: Theme.of(
                   context,
                 ).colorScheme.outline.withOpacity(0.2),
@@ -368,6 +455,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
         // Flashcard
         Expanded(
           child: PageView.builder(
+            key: ValueKey('${_lastGenerationId ?? 'session'}:${source.length}'),
             controller: _pageController,
             onPageChanged: (index) {
               setState(() {
@@ -375,9 +463,8 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
                 _showAnswer = false;
               });
             },
-            itemCount: _flashcards.length,
-            itemBuilder:
-                (context, index) => _buildFlashcard(_flashcards[index]),
+            itemCount: source.length,
+            itemBuilder: (context, index) => _buildFlashcard(source[index]),
           ),
         ),
 
@@ -402,8 +489,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
                 ),
               ),
               IconButton(
-                onPressed:
-                    _currentIndex < _flashcards.length - 1 ? _nextCard : null,
+                onPressed: _currentIndex < source.length - 1 ? _nextCard : null,
                 icon: const Icon(Icons.chevron_right),
                 iconSize: 32,
               ),
@@ -636,6 +722,92 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen> {
               ),
             ],
           ),
+    );
+  }
+}
+
+/// Sidebar for Flashcards: recent generations list with actions
+class _FlashcardsSidebar extends ConsumerWidget {
+  final VoidCallback onNewGeneration;
+  final void Function(String id) onSelect;
+  final Future<void> Function(String id) onDelete;
+
+  const _FlashcardsSidebar({
+    required this.onNewGeneration,
+    required this.onSelect,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final gensAsync = ref.watch(userGenerationsProvider);
+    final currentId = ref.watch(currentGenerationIdProvider);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onNewGeneration,
+                  icon: const Icon(Icons.add),
+                  label: const Text('New generation'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: gensAsync.when(
+            data: (items) {
+              if (items.isEmpty) {
+                return const Center(child: Text('No generations yet'));
+              }
+              return ListView.builder(
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final g = items[index];
+                  final selected = g.id == currentId;
+                  return ListTile(
+                    selected: selected,
+                    leading: CircleAvatar(
+                      child: Text(g.flashcardCount.toString()),
+                    ),
+                    title: Text(
+                      g.sourceTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      '${g.flashcardCount} cards',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    onTap: () => onSelect(g.id),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) async {
+                        if (value == 'delete') {
+                          await onDelete(g.id);
+                        }
+                      },
+                      itemBuilder:
+                          (context) => const [
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete'),
+                            ),
+                          ],
+                    ),
+                  );
+                },
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, st) => Center(child: Text('Error: $e')),
+          ),
+        ),
+      ],
     );
   }
 }

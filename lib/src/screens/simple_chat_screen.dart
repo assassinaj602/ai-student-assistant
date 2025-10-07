@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/gemini_ai_service.dart';
 import '../services/ai_providers.dart';
 import '../services/ai_backend.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+// Removed offline fallback: we surface friendly errors instead of dummy data
+import '../providers/simple_chat_local_provider.dart';
 
 class SimpleChatScreen extends ConsumerStatefulWidget {
   const SimpleChatScreen({super.key});
@@ -53,50 +54,45 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Get AI response
-      // Prefer unified backend; fall back to legacy provider if needed
-      AIBackend backend;
-      try {
-        backend = ref.read(aiBackendProvider);
-        final history =
-            ref
-                .read(chatMessagesProvider)
-                .map(
-                  (m) => AIMessage(
-                    role: m.role,
-                    content: m.content,
-                    timestamp: m.timestamp,
-                  ),
-                )
-                .toList();
-        final response = await backend.chat(message, history: history);
-        final aiMessage = ChatMessage(
-          role: 'assistant',
-          content: response,
-          timestamp: DateTime.now(),
-        );
-        ref.read(chatMessagesProvider.notifier).addMessage(aiMessage);
-      } catch (_) {
-        // Fallback to legacy service wrapper if something unexpected happens
-        final geminiService = ref.read(geminiAIServiceProvider);
-        final messages = ref.read(chatMessagesProvider);
-        final response = await geminiService.generateChatResponse(
-          message,
-          context: messages,
-        );
-        final aiMessage = ChatMessage(
-          role: 'assistant',
-          content: response,
-          timestamp: DateTime.now(),
-        );
-        ref.read(chatMessagesProvider.notifier).addMessage(aiMessage);
-      }
+      // Get AI response via unified backend
+      final backend = ref.read(aiBackendProvider);
+      final history =
+          ref
+              .read(chatMessagesProvider)
+              .map(
+                (m) => AIMessage(
+                  role: m.role,
+                  content: m.content,
+                  timestamp: m.timestamp,
+                ),
+              )
+              .toList();
+      final response = await backend.chat(message, history: history);
+      final aiMessage = ChatMessage(
+        role: 'assistant',
+        content: response,
+        timestamp: DateTime.now(),
+      );
+      ref.read(chatMessagesProvider.notifier).addMessage(aiMessage);
       _scrollToBottom();
     } catch (e) {
-      // Add error message
+      // On quota/rate-limit errors, provide local fallback instead of raw error
+      final msg = e.toString();
+      final isQuota =
+          msg.contains('quota') ||
+          msg.contains('429') ||
+          msg.contains('Too Many Requests') ||
+          msg.contains('rate limit') ||
+          msg.contains('billing') ||
+          msg.contains('250');
+      final content =
+          isQuota
+              ? 'Daily AI quota limit reached. Please try again later. (Resets at midnight UTC)'
+              : 'Sorry, I encountered an error: ${e.toString()}';
+
       final errorMessage = ChatMessage(
         role: 'assistant',
-        content: 'Sorry, I encountered an error: ${e.toString()}',
+        content: content,
         timestamp: DateTime.now(),
       );
       ref.read(chatMessagesProvider.notifier).addMessage(errorMessage);

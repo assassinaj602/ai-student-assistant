@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../services/gemini_ai_service.dart';
 import '../services/ai_providers.dart';
 
 class DiagnosticsScreen extends ConsumerWidget {
@@ -9,8 +8,13 @@ class DiagnosticsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gemini = ref.watch(geminiAIServiceProvider);
-    final keyPresent = (dotenv.env['GEMINI_API_KEY'] ?? '').trim().isNotEmpty;
+    bool keyPresent = false;
+    try {
+      keyPresent = (dotenv.maybeGet('OPENROUTER_API_KEY') ?? '').isNotEmpty;
+    } catch (_) {
+      keyPresent =
+          false; // dotenv not initialized; could still be using dart-define
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('AI Diagnostics')),
       body: ListView(
@@ -22,7 +26,11 @@ class DiagnosticsScreen extends ConsumerWidget {
             icon: keyPresent ? Icons.check_circle : Icons.error,
             color: keyPresent ? Colors.green : Colors.red,
           ),
-          _tile('Active Model', gemini.activeModelName ?? 'Not selected yet'),
+          _tile('Active Model', 'OpenRouter (DeepSeek)'),
+          const SizedBox(height: 8),
+          const Text(
+            'Tip: On web, if .env asset is not bundled, pass your key with --dart-define OPENROUTER_API_KEY=sk-or-... when running.',
+          ),
           const SizedBox(height: 12),
           ElevatedButton.icon(
             onPressed: () async {

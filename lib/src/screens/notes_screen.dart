@@ -146,307 +146,345 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notes'),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        actions: [
-          IconButton(
-            onPressed: _createNote,
-            icon: const Icon(Icons.add),
-            tooltip: 'Add Note',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                hintText: 'Search notes...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+    return Column(
+      children: [
+        // Custom header
+        Container(
+          color: Theme.of(context).colorScheme.surface,
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Text(
+                'Notes',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
-              onChanged: (value) {
-                setState(() => _searchQuery = value.toLowerCase());
-              },
-            ),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: _createNote,
+                icon: const Icon(Icons.add, size: 20),
+                label: const Text('Add Note'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ],
           ),
-          // Notes list
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream:
-                  _notesCollection
-                      .orderBy('updatedAt', descending: true)
-                      .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error loading notes',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          snapshot.error.toString(),
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final docs = snapshot.data?.docs ?? [];
-
-                // Filter notes based on search query
-                final filteredDocs =
-                    docs.where((doc) {
-                      if (_searchQuery.isEmpty) return true;
-
-                      final data = doc.data() as Map<String, dynamic>;
-                      final title =
-                          (data['title'] as String? ?? '').toLowerCase();
-                      final body =
-                          (data['body'] as String? ?? '').toLowerCase();
-
-                      return title.contains(_searchQuery) ||
-                          body.contains(_searchQuery);
-                    }).toList();
-
-                if (filteredDocs.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _searchQuery.isEmpty
-                              ? Icons.note_add
-                              : Icons.search_off,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _searchQuery.isEmpty
-                              ? 'No notes yet'
-                              : 'No notes found',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _searchQuery.isEmpty
-                              ? 'Tap the + button to create your first note'
-                              : 'Try a different search term',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: filteredDocs.length,
-                  itemBuilder: (context, index) {
-                    final doc = filteredDocs[index];
-                    final data = doc.data() as Map<String, dynamic>;
-
-                    final note = Note(
-                      id: doc.id,
-                      title: data['title'] as String? ?? '',
-                      body: data['body'] as String? ?? '',
-                      createdAt:
-                          (data['createdAt'] as Timestamp?)?.toDate() ??
-                          DateTime.now(),
-                      updatedAt:
-                          (data['updatedAt'] as Timestamp?)?.toDate() ??
-                          DateTime.now(),
-                      summary: data['summary'] as String?,
-                    );
-
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        title: Text(
-                          note.title,
-                          style: Theme.of(context).textTheme.titleMedium,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        // Main content
+        Expanded(
+          child: Column(
+            children: [
+              // Search bar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Search notes...',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value.toLowerCase());
+                  },
+                ),
+              ),
+              // Notes list
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream:
+                      _notesCollection
+                          .orderBy('updatedAt', descending: true)
+                          .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            if (note.summary != null &&
-                                note.summary!.isNotEmpty) ...[
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHighest
-                                      .withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
+                            Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Error loading notes',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              snapshot.error.toString(),
+                              style: Theme.of(context).textTheme.bodyMedium,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final docs = snapshot.data?.docs ?? [];
+
+                    // Filter notes based on search query
+                    final filteredDocs =
+                        docs.where((doc) {
+                          if (_searchQuery.isEmpty) return true;
+
+                          final data = doc.data() as Map<String, dynamic>;
+                          final title =
+                              (data['title'] as String? ?? '').toLowerCase();
+                          final body =
+                              (data['body'] as String? ?? '').toLowerCase();
+
+                          return title.contains(_searchQuery) ||
+                              body.contains(_searchQuery);
+                        }).toList();
+
+                    if (filteredDocs.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _searchQuery.isEmpty
+                                  ? Icons.note_add
+                                  : Icons.search_off,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchQuery.isEmpty
+                                  ? 'No notes yet'
+                                  : 'No notes found',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _searchQuery.isEmpty
+                                  ? 'Tap the + button to create your first note'
+                                  : 'Try a different search term',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: filteredDocs.length,
+                      itemBuilder: (context, index) {
+                        final doc = filteredDocs[index];
+                        final data = doc.data() as Map<String, dynamic>;
+
+                        final note = Note(
+                          id: doc.id,
+                          title: data['title'] as String? ?? '',
+                          body: data['body'] as String? ?? '',
+                          createdAt:
+                              (data['createdAt'] as Timestamp?)?.toDate() ??
+                              DateTime.now(),
+                          updatedAt:
+                              (data['updatedAt'] as Timestamp?)?.toDate() ??
+                              DateTime.now(),
+                          summary: data['summary'] as String?,
+                        );
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            title: Text(
+                              note.title,
+                              style: Theme.of(context).textTheme.titleMedium,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (note.summary != null &&
+                                    note.summary!.isNotEmpty) ...[
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerHighest
+                                          .withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Icon(
-                                          Icons.auto_awesome,
-                                          size: 14,
-                                          color:
-                                              Theme.of(
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.auto_awesome,
+                                              size: 14,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'AI Summary',
+                                              style: Theme.of(
                                                 context,
-                                              ).colorScheme.primary,
+                                              ).textTheme.labelSmall?.copyWith(
+                                                color:
+                                                    Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'AI Summary',
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.labelSmall?.copyWith(
-                                            color:
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                            fontWeight: FontWeight.w600,
+                                        const SizedBox(height: 2),
+                                        SizedBox(
+                                          height:
+                                              120, // preview height to avoid overflow
+                                          child: Scrollbar(
+                                            thumbVisibility: false,
+                                            child: SingleChildScrollView(
+                                              padding: EdgeInsets.zero,
+                                              physics:
+                                                  const ClampingScrollPhysics(),
+                                              child: MarkdownBody(
+                                                data: note.summary!,
+                                                styleSheet: MarkdownStyleSheet(
+                                                  p: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.8),
+                                                        height: 1.3,
+                                                      ),
+                                                  listBullet: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.8),
+                                                        height: 1.3,
+                                                      ),
+                                                  strong: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.9),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                  code: TextStyle(
+                                                    backgroundColor: Theme.of(
+                                                          context,
+                                                        )
+                                                        .colorScheme
+                                                        .surfaceVariant
+                                                        .withOpacity(0.3),
+                                                    color:
+                                                        Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                    fontSize: 12,
+                                                  ),
+                                                  blockSpacing: 4.0,
+                                                  listIndent: 16.0,
+                                                ),
+                                                shrinkWrap: true,
+                                                selectable: false,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 4),
-                                    ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        maxHeight: 60,
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
+                                if (note.body.isNotEmpty)
+                                  Text(
+                                    note.body,
+                                    maxLines: note.summary != null ? 1 : 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.7),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            trailing: PopupMenuButton(
+                              itemBuilder:
+                                  (context) => [
+                                    const PopupMenuItem(
+                                      value: 'edit',
+                                      child: ListTile(
+                                        leading: Icon(Icons.edit),
+                                        title: Text('Edit'),
+                                        contentPadding: EdgeInsets.zero,
                                       ),
-                                      child: MarkdownBody(
-                                        data: note.summary!,
-                                        styleSheet: MarkdownStyleSheet(
-                                          p: Theme.of(
-                                            context,
-                                          ).textTheme.bodySmall?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.8),
-                                            height: 1.3,
-                                          ),
-                                          listBullet: Theme.of(
-                                            context,
-                                          ).textTheme.bodySmall?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.8),
-                                            height: 1.3,
-                                          ),
-                                          strong: Theme.of(
-                                            context,
-                                          ).textTheme.bodySmall?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.9),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          code: TextStyle(
-                                            backgroundColor: Theme.of(context)
-                                                .colorScheme
-                                                .surfaceVariant
-                                                .withOpacity(0.3),
-                                            color:
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurfaceVariant,
-                                            fontSize: 12,
-                                          ),
-                                          blockSpacing: 4.0,
-                                          listIndent: 16.0,
-                                        ),
-                                        shrinkWrap: true,
-                                        selectable: false,
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'delete',
+                                      child: ListTile(
+                                        leading: Icon(Icons.delete),
+                                        title: Text('Delete'),
+                                        contentPadding: EdgeInsets.zero,
                                       ),
                                     ),
                                   ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                            ],
-                            if (note.body.isNotEmpty)
-                              Text(
-                                note.body,
-                                maxLines: note.summary != null ? 1 : 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
-                                ),
-                              ),
-                          ],
-                        ),
-                        trailing: PopupMenuButton(
-                          itemBuilder:
-                              (context) => [
-                                const PopupMenuItem(
-                                  value: 'edit',
-                                  child: ListTile(
-                                    leading: Icon(Icons.edit),
-                                    title: Text('Edit'),
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'delete',
-                                  child: ListTile(
-                                    leading: Icon(Icons.delete),
-                                    title: Text('Delete'),
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                ),
-                              ],
-                          onSelected: (value) {
-                            switch (value) {
-                              case 'edit':
-                                _editNote(note);
-                                break;
-                              case 'delete':
-                                _deleteNote(note);
-                                break;
-                            }
-                          },
-                        ),
-                        onTap: () => _editNote(note),
-                      ),
+                              onSelected: (value) {
+                                switch (value) {
+                                  case 'edit':
+                                    _editNote(note);
+                                    break;
+                                  case 'delete':
+                                    _deleteNote(note);
+                                    break;
+                                }
+                              },
+                            ),
+                            onTap: () => _editNote(note),
+                          ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

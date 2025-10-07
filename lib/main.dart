@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'firebase_options.dart';
 import 'src/app.dart';
 import 'src/services/notification_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Global instance for notifications
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -16,17 +16,16 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  bool envLoaded = false;
+  debugPrint('Starting AI Student Assistant...');
+
+  // Load environment variables (.env). For Flutter web, this asset may not exist.
   try {
     await dotenv.load(fileName: ".env");
-    envLoaded = true;
-    debugPrint('Environment loaded successfully');
+    debugPrint('Env loaded from .env');
   } catch (e) {
-    debugPrint('Environment file not found or error loading: $e');
-  }
-  if (kIsWeb && !envLoaded) {
+    // On web, missing asset will trigger a 404; that's fine if you're using --dart-define
     debugPrint(
-      'Web build: .env asset missing. Ensure .env listed under flutter: assets: in pubspec.yaml (DEV ONLY).',
+      'Env not loaded from .env (will rely on --dart-define if provided): $e',
     );
   }
 

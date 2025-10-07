@@ -67,6 +67,7 @@ class ChatConversation {
   final DateTime updatedAt;
   final String userId;
   final int messageCount;
+  final String? modelId; // optional per-conversation AI model
 
   const ChatConversation({
     required this.id,
@@ -75,6 +76,7 @@ class ChatConversation {
     required this.updatedAt,
     required this.userId,
     this.messageCount = 0,
+    this.modelId,
   });
 
   /// Create ChatConversation from Firestore document data
@@ -86,6 +88,7 @@ class ChatConversation {
       updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] as int),
       userId: map['userId'] as String,
       messageCount: map['messageCount'] as int? ?? 0,
+      modelId: map['modelId'] as String?,
     );
   }
 
@@ -97,6 +100,7 @@ class ChatConversation {
       'updatedAt': updatedAt.millisecondsSinceEpoch,
       'userId': userId,
       'messageCount': messageCount,
+      if (modelId != null) 'modelId': modelId,
     };
   }
 
@@ -108,6 +112,7 @@ class ChatConversation {
     DateTime? updatedAt,
     String? userId,
     int? messageCount,
+    String? modelId,
   }) {
     return ChatConversation(
       id: id ?? this.id,
@@ -116,6 +121,7 @@ class ChatConversation {
       updatedAt: updatedAt ?? this.updatedAt,
       userId: userId ?? this.userId,
       messageCount: messageCount ?? this.messageCount,
+      modelId: modelId ?? this.modelId,
     );
   }
 }
