@@ -27,15 +27,16 @@ class OpenRouterAIService implements AIBackend {
     if (apiKeyOverride != null && apiKeyOverride!.isNotEmpty) {
       return apiKeyOverride!;
     }
-    // Try .env via flutter_dotenv first, but guard if dotenv wasn't initialized
+    // Prefer compile-time define (web/CI) first
+    const k = String.fromEnvironment('OPENROUTER_API_KEY');
+    if (k.isNotEmpty) return k;
+    // Fallback to .env for mobile/desktop
     try {
       final envKey = dotenv.maybeGet('OPENROUTER_API_KEY') ?? '';
       if (envKey.isNotEmpty) return envKey;
     } catch (_) {
-      // ignore: dotenv not initialized or asset missing; fall through to dart-define
+      // ignore: dotenv not initialized or asset missing
     }
-    const k = String.fromEnvironment('OPENROUTER_API_KEY');
-    if (k.isNotEmpty) return k;
     throw Exception(
       'OPENROUTER_API_KEY missing. Provide it in .env (for mobile/desktop) or as --dart-define OPENROUTER_API_KEY=... (especially for web).',
     );

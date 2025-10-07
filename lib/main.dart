@@ -18,15 +18,17 @@ void main() async {
 
   debugPrint('Starting AI Student Assistant...');
 
-  // Load environment variables (.env). For Flutter web, this asset may not exist.
-  try {
-    await dotenv.load(fileName: ".env");
-    debugPrint('Env loaded from .env');
-  } catch (e) {
-    // On web, missing asset will trigger a 404; that's fine if you're using --dart-define
-    debugPrint(
-      'Env not loaded from .env (will rely on --dart-define if provided): $e',
-    );
+  // Load environment variables from .env only on non-web platforms.
+  // On web, we intentionally rely on --dart-define at build time for secrets.
+  if (!kIsWeb) {
+    try {
+      await dotenv.load(fileName: ".env");
+      debugPrint('Env loaded from .env');
+    } catch (e) {
+      debugPrint('Env not loaded from .env: $e');
+    }
+  } else {
+    debugPrint('Web build: skipping .env load, using --dart-define for secrets');
   }
 
   // Initialize Firebase

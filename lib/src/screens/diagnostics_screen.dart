@@ -29,7 +29,7 @@ class DiagnosticsScreen extends ConsumerWidget {
           _tile('Active Model', 'OpenRouter (DeepSeek)'),
           const SizedBox(height: 8),
           const Text(
-            'Tip: On web, if .env asset is not bundled, pass your key with --dart-define OPENROUTER_API_KEY=sk-or-... when running.',
+            'Tip: On web, the app expects --dart-define OPENROUTER_API_KEY=sk-or-… at build time (provided by GitHub Actions).',
           ),
           const SizedBox(height: 12),
           ElevatedButton.icon(
