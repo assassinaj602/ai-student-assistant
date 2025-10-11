@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'src/app.dart';
 import 'src/services/notification_service.dart';
@@ -16,7 +17,19 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   debugPrint('Starting AI Student Assistant...');
-  debugPrint('API key is hardcoded - no .env or --dart-define needed!');
+
+  // Load .env for native platforms (mobile/desktop)
+  // Web builds use --dart-define instead
+  if (!kIsWeb) {
+    try {
+      await dotenv.load(fileName: ".env");
+      debugPrint('✅ Loaded .env file for API keys');
+    } catch (e) {
+      debugPrint('⚠️ No .env file found (will use --dart-define): $e');
+    }
+  } else {
+    debugPrint('Web build: using --dart-define for secrets');
+  }
 
   // Initialize Firebase
   try {

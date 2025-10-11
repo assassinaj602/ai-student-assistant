@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'ai_backend.dart';
 import 'model_selection.dart';
 import '../models/flashcard.dart' as models;
@@ -27,22 +28,43 @@ class OpenRouterAIService implements AIBackend {
 
   static const _endpoint = 'https://openrouter.ai/api/v1/chat/completions';
 
-  // Smart key resolution: GitHub CI injects via --dart-define, local dev uses default
-  static const String _fallbackKey = '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';
-
   String get _apiKey {
     if (apiKeyOverride != null && apiKeyOverride!.isNotEmpty) {
       return apiKeyOverride!;
     }
 
-    // Try compile-time constant first (GitHub CI uses --dart-define)
+    // SECURE: Only uses environment-based keys (never hardcoded in source)
+    // Priority order:
+    // 1. --dart-define (GitHub CI, web builds)
+    // 2. .env file (local mobile/desktop dev)
+
+    // Try compile-time constant first (web/CI)
     const envKey = String.fromEnvironment('OPENROUTER_API_KEY');
     if (envKey.isNotEmpty) {
       return envKey;
     }
 
-    // Fallback to embedded key for local development (works out of the box)
-    return _fallbackKey;
+    // Try .env file (native platforms)
+    try {
+      final dotenvKey = dotenv.maybeGet('OPENROUTER_API_KEY') ?? '';
+      if (dotenvKey.isNotEmpty) {
+        return dotenvKey;
+      }
+    } catch (_) {
+      // .env not loaded or not available on web
+    }
+
+    // If no key found, throw clear error with instructions
+    throw Exception(
+      '🔐 OPENROUTER_API_KEY not configured!\n\n'
+      'For NATIVE (Android/iOS/Desktop):\n'
+      '1. Create/edit .env file in project root\n'
+      '2. Add: OPENROUTER_API_KEY=your_key_here\n\n'
+      'For WEB/Production:\n'
+      '1. Build with: flutter build web --dart-define=OPENROUTER_API_KEY=your_key\n'
+      '2. Or set GitHub Secret: OPENROUTER_API_KEY\n\n'
+      'Get your key at: https://openrouter.ai/keys',
+    );
   }
 
   Map<String, String> _headers() {
