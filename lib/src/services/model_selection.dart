@@ -8,19 +8,26 @@ class ModelOption {
   const ModelOption(this.id, this.label);
 }
 
-// Pool of suggested free models to rotate between - prioritized by reliability
+// Pool of latest free models - prioritized by low demand and reliability
 const List<ModelOption> kDeepSeekFreeModels = [
-  ModelOption('deepseek/deepseek-chat-v3.1:free', 'DeepSeek Chat v3.1 (free)'),
-  ModelOption('deepseek/deepseek-chat:free', 'DeepSeek Chat (free)'),
-  ModelOption('deepseek/deepseek-r1:free', 'DeepSeek R1 (free, reasoning)'),
-  ModelOption('deepseek/deepseek-r1-0528:free', 'DeepSeek R1 0528 (free)'),
+  // Try smaller, less popular models first (lower demand = higher success rate)
+  ModelOption('meta-llama/llama-3.2-3b-instruct:free', 'LLaMA 3.2 3B (free)'),
+  ModelOption('qwen/qwen3-8b:free', 'Qwen 3 8B (free)'),
+  ModelOption('z-ai/glm-4.5-air:free', 'GLM 4.5 Air (free)'),
+  ModelOption('gpt-oss-20b:free', 'GPT-OSS 20B (free)'),
+  ModelOption('moonshotai/kimi-k2:free', 'Kimi K2 (free)'),
+
+  // Medium demand models
   ModelOption(
-    'deepseek/deepseek-r1-distill-llama-70b:free',
-    'R1 Distill Llama 70B (free)',
+    'shisa-ai/shisa-v2-llama3.3-70b:free',
+    'Shisa V2 LLaMA 3.3 70B (free)',
   ),
-  ModelOption('meta-llama/llama-3.2-3b-instruct:free', 'Llama 3.2 3B (free)'),
-  ModelOption('qwen/qwen-2-7b-instruct:free', 'Qwen 2 7B (free)'),
-  ModelOption('google/gemini-flash-1.5:free', 'Gemini Flash 1.5 (free)'),
+  ModelOption('deepseek/deepseek-r1:free', 'DeepSeek R1 (free, reasoning)'),
+
+  // High demand models (try last)
+  ModelOption('deepseek/deepseek-chat-v3-0324:free', 'DeepSeek V3 Chat (free)'),
+  ModelOption('meta-llama/llama-3.1-405b:free', 'LLaMA 3.1 405B (free)'),
+  ModelOption('meta-llama/llama-4-scout:free', 'LLaMA 4 Scout (free)'),
 ];
 
 /// Special value representing automatic rotation across the pool.
@@ -37,8 +44,8 @@ class ModelSelection extends StateNotifier<String> {
   static String _initial() {
     const env = String.fromEnvironment('OPENROUTER_MODEL');
     if (env.isNotEmpty) return env;
-    // Default to first option in pool (stable chat model) if no env override.
-    return kDeepSeekFreeModels.first.id;
+    // Default to auto-rotation for best reliability and user experience
+    return kAutoModelId;
   }
 
   void setModel(String id) {

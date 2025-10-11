@@ -3,6 +3,7 @@ import '../services/chat_service.dart';
 import '../services/attendance_service.dart';
 import '../models/chat_message.dart';
 import '../models/attendance_record.dart';
+import '../models/course.dart';
 import '../services/model_selection.dart';
 
 /// Provider for ChatService
@@ -182,18 +183,22 @@ class AttendanceActions {
   final AttendanceService _attendanceService;
   AttendanceActions(this._attendanceService);
 
-  /// Mark attendance for a course
+  /// Mark attendance for a course with validation
   Future<void> markAttendance({
     required String courseId,
     required String courseName,
     required AttendanceStatus status,
     String? notes,
+    Course? course, // Optional: for schedule validation
+    DateTime? date, // Optional: defaults to now
   }) async {
     await _attendanceService.markAttendance(
       courseId: courseId,
       courseName: courseName,
       status: status,
       notes: notes,
+      course: course,
+      date: date,
     );
   }
 

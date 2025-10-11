@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'ai_backend.dart';
 import 'feature_flags_service.dart';
 import 'openrouter_ai_service.dart';
-import 'model_selection.dart';
 
 /// Chooses which AI backend to expose based on feature flags.
 /// ALWAYS uses rotating fallback for maximum reliability!

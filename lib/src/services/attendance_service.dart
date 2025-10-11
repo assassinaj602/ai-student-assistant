@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/attendance_record.dart';
+import '../models/course.dart';
 
 /// Service for managing attendance records with Firebase
 class AttendanceService {
@@ -14,27 +15,99 @@ class AttendanceService {
   CollectionReference get _attendanceCollection =>
       _firestore.collection('attendance_records');
 
-  /// Add an attendance record
+  /// Add an attendance record with validation
   Future<void> markAttendance({
     required String courseId,
     required String courseName,
     required AttendanceStatus status,
     String? notes,
+    Course? course, // Optional: for schedule validation
+    DateTime? date, // Optional: defaults to now
   }) async {
     final userId = currentUserId;
     if (userId == null) throw Exception('User not authenticated');
+
+    final attendanceDate = date ?? DateTime.now();
+
+    // Validation 1: Prevent future dates
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDay = DateTime(
+      attendanceDate.year,
+      attendanceDate.month,
+      attendanceDate.day,
+    );
+
+    if (targetDay.isAfter(today)) {
+      throw Exception('Cannot mark attendance for future dates');
+    }
+
+    // Validation 2: Check if attendance already exists for this date
+    final existingAttendance = await hasAttendanceForDate(
+      courseId: courseId,
+      date: attendanceDate,
+    );
+
+    if (existingAttendance) {
+      throw Exception(
+        'Attendance already marked for ${attendanceDate.day}/${attendanceDate.month}/${attendanceDate.year}',
+      );
+    }
+
+    // Validation 3: Check if course is scheduled for this day (if course provided)
+    if (course != null && !course.isScheduledFor(attendanceDate)) {
+      final dayNames = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+      ];
+      final dayName = dayNames[attendanceDate.weekday - 1];
+      throw Exception(
+        'Class is not scheduled on $dayName. Scheduled days: ${course.formattedDays}',
+      );
+    }
 
     final record = AttendanceRecord(
       id: '',
       userId: userId,
       courseId: courseId,
       courseName: courseName,
-      date: DateTime.now(),
+      date: attendanceDate,
       status: status,
       notes: notes,
     );
 
     await _attendanceCollection.add(record.toMap());
+  }
+
+  /// Check if attendance exists for a specific date (not just today)
+  Future<bool> hasAttendanceForDate({
+    required String courseId,
+    required DateTime date,
+  }) async {
+    final userId = currentUserId;
+    if (userId == null) return false;
+
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+    final snapshot =
+        await _attendanceCollection
+            .where('userId', isEqualTo: userId)
+            .where('courseId', isEqualTo: courseId)
+            .where(
+              'date',
+              isGreaterThanOrEqualTo: startOfDay.millisecondsSinceEpoch,
+            )
+            .where('date', isLessThanOrEqualTo: endOfDay.millisecondsSinceEpoch)
+            .limit(1)
+            .get();
+
+    return snapshot.docs.isNotEmpty;
   }
 
   /// Get attendance records for a specific course

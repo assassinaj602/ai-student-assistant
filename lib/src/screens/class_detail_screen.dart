@@ -501,6 +501,10 @@ class _ClassDetailScreenState extends ConsumerState<ClassDetailScreen> {
   }
 
   void _markAttendance() {
+    // Check if class is scheduled today
+    final today = DateTime.now();
+    final isScheduledToday = widget.course.isScheduledFor(today);
+
     showDialog(
       context: context,
       builder:
@@ -509,6 +513,37 @@ class _ClassDetailScreenState extends ConsumerState<ClassDetailScreen> {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (!isScheduledToday) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning, color: Colors.orange.shade800),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Class not scheduled today',
+                            style: TextStyle(
+                              color: Colors.orange.shade900,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'This class is scheduled on: ${widget.course.formattedDays}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const Divider(height: 24),
+                ],
                 const Text('Mark your attendance for today:'),
                 const SizedBox(height: 16),
                 Row(
@@ -569,6 +604,7 @@ class _ClassDetailScreenState extends ConsumerState<ClassDetailScreen> {
         courseId: widget.course.id,
         courseName: widget.course.name,
         status: status,
+        course: widget.course, // Pass course for validation
       );
 
       if (mounted) {
@@ -576,15 +612,28 @@ class _ClassDetailScreenState extends ConsumerState<ClassDetailScreen> {
           SnackBar(
             content: Text('Marked as ${status.displayName.toLowerCase()}'),
             backgroundColor: status.color,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        // Extract meaningful error message
+        String errorMessage = e.toString();
+        if (errorMessage.startsWith('Exception: ')) {
+          errorMessage = errorMessage.substring('Exception: '.length);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error marking attendance: $e'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
           ),
         );
       }
