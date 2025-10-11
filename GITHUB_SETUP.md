@@ -22,7 +22,7 @@ Before pushing to GitHub, set up your secret:
 ### Step 2: Add Repository Secret
 1. Click **"New repository secret"**
 2. **Name**: `OPENROUTER_API_KEY`
-3. **Value**: `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`
+3. **Value**: `your_openrouter_api_key_here`
 4. Click **"Add secret"**
 
 ### Step 3: (Optional) Set Model Variable

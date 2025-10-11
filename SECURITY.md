@@ -17,7 +17,7 @@
 Your `.env` file is already configured:
 ```bash
 # .env (already in .gitignore - NEVER commit this file!)
-OPENROUTER_API_KEY=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
+OPENROUTER_API_KEY=your_actual_key_here
 ```
 
 **Run normally:**
@@ -34,7 +34,7 @@ The app automatically loads `.env` on native platforms.
 Web builds DON'T read `.env`. Use `--dart-define`:
 
 ```bash
-flutter run -d chrome --dart-define=OPENROUTER_API_KEY=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
+flutter run -d chrome --dart-define=OPENROUTER_API_KEY=your_actual_key_here
 ```
 
 **Or create a VS Code launch configuration** (already done in `.vscode/launch.json`)
@@ -51,7 +51,7 @@ flutter run -d chrome --dart-define=OPENROUTER_API_KEY=sk-or-v1-cc8e50cfef181ca0
 
 3. Add:
    - **Name**: `OPENROUTER_API_KEY`
-   - **Value**: `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`
+   - **Value**: `your_actual_openrouter_api_key`
 
 4. Click **"Add secret"**
 
@@ -127,11 +127,11 @@ git push origin main
 # Check what you're about to commit
 git diff
 
-# Search for your API key in tracked files (should return nothing!)
-git grep "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"
+# Search for any API keys in tracked files (should return nothing!)
+git grep "sk-or-v1-"
 ```
 
-**If the second command returns ANYTHING**, your key is in a tracked file - **DO NOT COMMIT!**
+**If the second command returns ANY actual keys** (not just docs/comments), **DO NOT COMMIT!**
 
 ---
 
