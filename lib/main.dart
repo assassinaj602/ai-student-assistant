@@ -7,7 +7,6 @@ import 'firebase_options.dart';
 import 'src/app.dart';
 import 'src/services/notification_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Global instance for notifications
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -17,19 +16,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   debugPrint('Starting AI Student Assistant...');
-
-  // Load environment variables from .env only on non-web platforms.
-  // On web, we intentionally rely on --dart-define at build time for secrets.
-  if (!kIsWeb) {
-    try {
-      await dotenv.load(fileName: ".env");
-      debugPrint('Env loaded from .env');
-    } catch (e) {
-      debugPrint('Env not loaded from .env: $e');
-    }
-  } else {
-    debugPrint('Web build: skipping .env load, using --dart-define for secrets');
-  }
+  debugPrint('API key is hardcoded - no .env or --dart-define needed!');
 
   // Initialize Firebase
   try {

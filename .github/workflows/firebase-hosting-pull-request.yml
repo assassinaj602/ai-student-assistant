@@ -28,6 +28,8 @@ jobs:
             echo "Error: OPENROUTER_API_KEY GitHub secret is not set. Aborting build." >&2
             exit 1
           fi
+          echo "OPENROUTER_API_KEY length: ${#OPENROUTER_API_KEY}"
+          if [ -n "$OPENROUTER_MODEL" ]; then echo "OPENROUTER_MODEL: $OPENROUTER_MODEL"; fi
           # Build the Flutter web app with OpenRouter credentials injected at build time
           # OPENROUTER_MODEL is optional; defaults to DeepSeek free chat model if not set
           flutter build web --release \

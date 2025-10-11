@@ -1,20 +1,24 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'ai_backend.dart';
 import 'model_selection.dart';
 import '../models/flashcard.dart' as models;
 
 /// OpenRouter-backed AI service (DeepSeek)
-/// Loads API key from .env (OPENROUTER_API_KEY). Also supports --dart-define as a fallback.
+/// API key is hardcoded directly in the service - no .env or --dart-define needed!
 class OpenRouterAIService implements AIBackend {
+  // Reuse a single HTTP client for connection keep-alive and efficiency
+  static final http.Client _client = http.Client();
+
   final String model;
   final String? apiKeyOverride; // optional for testing
 
   static String _defaultModel() {
     const m = String.fromEnvironment('OPENROUTER_MODEL');
+    // Default to DeepSeek Chat v3.1 - reliable free model
+    // Fallback models are handled by the rotating provider
     return m.isNotEmpty ? m : 'deepseek/deepseek-chat-v3.1:free';
   }
 
@@ -23,23 +27,22 @@ class OpenRouterAIService implements AIBackend {
 
   static const _endpoint = 'https://openrouter.ai/api/v1/chat/completions';
 
+  // Smart key resolution: GitHub CI injects via --dart-define, local dev uses default
+  static const String _fallbackKey = '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';
+
   String get _apiKey {
     if (apiKeyOverride != null && apiKeyOverride!.isNotEmpty) {
       return apiKeyOverride!;
     }
-    // Prefer compile-time define (web/CI) first
-    const k = String.fromEnvironment('OPENROUTER_API_KEY');
-    if (k.isNotEmpty) return k;
-    // Fallback to .env for mobile/desktop
-    try {
-      final envKey = dotenv.maybeGet('OPENROUTER_API_KEY') ?? '';
-      if (envKey.isNotEmpty) return envKey;
-    } catch (_) {
-      // ignore: dotenv not initialized or asset missing
+
+    // Try compile-time constant first (GitHub CI uses --dart-define)
+    const envKey = String.fromEnvironment('OPENROUTER_API_KEY');
+    if (envKey.isNotEmpty) {
+      return envKey;
     }
-    throw Exception(
-      'OPENROUTER_API_KEY missing. Provide it in .env (for mobile/desktop) or as --dart-define OPENROUTER_API_KEY=... (especially for web).',
-    );
+
+    // Fallback to embedded key for local development (works out of the box)
+    return _fallbackKey;
   }
 
   Map<String, String> _headers() {
@@ -82,21 +85,39 @@ class OpenRouterAIService implements AIBackend {
       debugPrint('OpenRouter key length: ${_apiKey.length}');
     } catch (_) {}
 
-    final r = await http
+    final r = await _client
         .post(Uri.parse(_endpoint), headers: _headers(), body: body)
         .timeout(const Duration(minutes: 2));
 
     if (r.statusCode == 200) {
       final data = jsonDecode(r.body) as Map<String, dynamic>;
       final choices = (data['choices'] as List?) ?? const [];
-      if (choices.isEmpty) return "I'm not sure.";
+      if (choices.isEmpty) {
+        throw Exception('OpenRouter returned no choices. Response: ${r.body}');
+      }
       final msg = choices.first['message'] as Map<String, dynamic>?;
       final content = (msg?['content'] ?? '').toString().trim();
-      return content.isEmpty ? "I'm not sure." : content;
+      if (content.isEmpty) {
+        throw Exception(
+          'OpenRouter returned empty content. Response: ${r.body}',
+        );
+      }
+      return content;
     }
 
     final err = 'HTTP ${r.statusCode}: ${r.body}';
     debugPrint('OpenRouter error: $err');
+
+    if (r.statusCode == 404) {
+      throw Exception(
+        '❌ OpenRouter 404: Free model blocked!\n\n'
+        'Go to https://openrouter.ai/settings/privacy and enable:\n'
+        '✅ "Enable free endpoints that may train on inputs"\n'
+        '✅ "Enable free endpoints that may publish prompts"\n\n'
+        'Then refresh this page.',
+      );
+    }
+
     if (r.statusCode == 401) {
       throw Exception(
         'Unauthorized (401). Check that your OpenRouter API key is valid and that your domain is allowed in the key settings (e.g., http://localhost:<port> for web dev).',
@@ -201,15 +222,25 @@ class _RotatingOpenRouterBackend implements AIBackend {
 
   Future<T> _tryAll<T>(Future<T> Function(OpenRouterAIService svc) op) async {
     Exception? last;
+    int attemptCount = 0;
     for (final id in pool) {
+      attemptCount++;
       try {
+        debugPrint('🔄 Trying model $attemptCount/${pool.length}: $id');
         final svc = OpenRouterAIService(model: id);
-        return await op(svc);
+        final result = await op(svc);
+        debugPrint('✅ Success with model: $id');
+        return result;
       } catch (e) {
+        debugPrint('❌ Failed with $id: ${e.toString().substring(0, 100)}...');
         last = e is Exception ? e : Exception(e.toString());
+        // Continue to next model
       }
     }
-    throw last ?? Exception('All models failed. Try again later.');
+    throw last ??
+        Exception(
+          'All ${pool.length} models failed. Please check your internet connection or try again later.',
+        );
   }
 
   @override

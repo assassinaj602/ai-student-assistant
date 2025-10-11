@@ -22,6 +22,30 @@
         "android",
   // dotenv-based key loading; no dart-define required
       ]
+    },
+    {
+      "name": "Flutter (Web with OpenRouter defines)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "toolArgs": [
+        "--dart-define=OPENROUTER_API_KEY=${env:OPENROUTER_API_KEY}",
+        "--dart-define=OPENROUTER_MODEL=deepseek/deepseek-chat-v3.1:free"
+      ]
+    },
+    {
+      "name": "Flutter (Android device)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "Flutter (Web, use URL param)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "deviceId": "chrome"
     }
   ]
 }

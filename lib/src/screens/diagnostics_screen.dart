@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../services/ai_providers.dart';
 
 class DiagnosticsScreen extends ConsumerWidget {
@@ -8,28 +7,21 @@ class DiagnosticsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    bool keyPresent = false;
-    try {
-      keyPresent = (dotenv.maybeGet('OPENROUTER_API_KEY') ?? '').isNotEmpty;
-    } catch (_) {
-      keyPresent =
-          false; // dotenv not initialized; could still be using dart-define
-    }
     return Scaffold(
       appBar: AppBar(title: const Text('AI Diagnostics')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _tile(
-            'API Key Present',
-            keyPresent ? 'Yes' : 'No',
-            icon: keyPresent ? Icons.check_circle : Icons.error,
-            color: keyPresent ? Colors.green : Colors.red,
+            'API Key Status',
+            'Hardcoded in service',
+            icon: Icons.check_circle,
+            color: Colors.green,
           ),
           _tile('Active Model', 'OpenRouter (DeepSeek)'),
           const SizedBox(height: 8),
           const Text(
-            'Tip: On web, the app expects --dart-define OPENROUTER_API_KEY=sk-or-… at build time (provided by GitHub Actions).',
+            'API key is now hardcoded directly in the OpenRouterAIService - works everywhere without .env or --dart-define!',
           ),
           const SizedBox(height: 12),
           ElevatedButton.icon(

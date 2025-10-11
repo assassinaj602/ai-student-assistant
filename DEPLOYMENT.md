@@ -37,7 +37,7 @@ This guide will help you set up automatic deployment from GitHub to Firebase Hos
    - Select **JSON** format
    - Click **"CREATE"** (file will download)
 
-### Step 2: Add Secret to GitHub Repository
+### Step 2: Add Secrets to GitHub Repository
 
 1. **Open the downloaded JSON file** and copy ALL the content
 
@@ -53,11 +53,15 @@ This guide will help you set up automatic deployment from GitHub to Firebase Hos
    - **Value:** Paste the entire JSON content from the downloaded file
    - Click **"Add secret"**
 
-5. **Create the Gemini API Key secret:**
+5. **Create the OpenRouter API Key secret:**
    - Click **"New repository secret"** again
-   - **Name:** `GEMINI_API_KEY`
-   - **Value:** `AIzaSyA6rafof_TPICMliKFzl9aSf9Mv32g2Ff4`
+   - **Name:** `OPENROUTER_API_KEY`
+   - **Value:** `<your OpenRouter API key>`
    - Click **"Add secret"**
+
+6. Optionally set a default model:
+   - **Name:** `OPENROUTER_MODEL`
+   - **Value:** `deepseek/deepseek-chat-v3.1:free`
 
 ### Step 3: Test Automatic Deployment
 
@@ -82,7 +86,9 @@ The GitHub Actions workflow (`.github/workflows/firebase-hosting-merge.yml`) wil
 1. **Trigger** on every push to `main` branch
 2. **Setup** Flutter environment
 3. **Install** dependencies with `flutter pub get`
-4. **Build** the web app with `flutter build web --release`
+4. **Build** the web app with `flutter build web --release` and inject:
+   - `--dart-define=OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}`
+   - `--dart-define=OPENROUTER_MODEL=${{ secrets.OPENROUTER_MODEL }}` (optional)
 5. **Deploy** to Firebase Hosting using the service account
 
 ## 🌐 Your Live URLs
@@ -95,30 +101,32 @@ The GitHub Actions workflow (`.github/workflows/firebase-hosting-merge.yml`) wil
 
 Your deployed app includes:
 - 🔐 Firebase Authentication (Email/Password + Google Sign-in)
-- 📚 Course and Timetable Management
-- 📝 Note-taking with AI Summarization
-- 🤖 AI Chat Assistant
-- 🎯 AI-generated Flashcards
+- 📝 Notes with AI Summarization
+- 🤖 AI Chat Assistant (OpenRouter/DeepSeek)
+- 🎯 AI-generated Flashcards (~10 by default)
 - 📱 Responsive web design
-- 🔄 Offline-first with auto-sync
 
 ## 🔧 Local Development
 
-To run locally:
+To run locally (web):
 ```bash
 flutter pub get
-flutter run -d web-server --web-port 8080
+flutter run -d chrome --dart-define=OPENROUTER_API_KEY=sk-or-... --dart-define=OPENROUTER_MODEL=deepseek/deepseek-chat-v3.1:free
 ```
 
-To build for production:
+To build for production (web):
 ```bash
-flutter build web --release
+flutter build web --release --dart-define=OPENROUTER_API_KEY=sk-or-... --dart-define=OPENROUTER_MODEL=deepseek/deepseek-chat-v3.1:free
 ```
 
 To deploy manually:
 ```bash
 firebase deploy --only hosting
 ```
+
+**Notes:**
+- Do NOT bundle .env for web; use --dart-define instead.
+- In OpenRouter dashboard, add your site origin(s) to Allowed Origins (e.g., http://localhost:12345 and your Firebase Hosting URL).
 
 ---
 

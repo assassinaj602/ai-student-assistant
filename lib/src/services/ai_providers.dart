@@ -5,14 +5,12 @@ import 'openrouter_ai_service.dart';
 import 'model_selection.dart';
 
 /// Chooses which AI backend to expose based on feature flags.
+/// ALWAYS uses rotating fallback for maximum reliability!
 final aiBackendProvider = Provider<AIBackend>((ref) {
   // Observe flags (reserved for future model selection)
   ref.watch(featureFlagsProvider);
 
-  // If Auto is selected, use rotation, else direct service.
-  final selected = ref.watch(selectedModelIdProvider);
-  if (selected == kAutoModelId) {
-    return ref.watch(rotatingAIBackendProvider);
-  }
-  return ref.watch(openRouterAIServiceProvider);
+  // ALWAYS use rotation to ensure automatic fallback when models fail
+  // This prevents 502 errors from breaking the app
+  return ref.watch(rotatingAIBackendProvider);
 });

@@ -8,15 +8,19 @@ class ModelOption {
   const ModelOption(this.id, this.label);
 }
 
-// Pool of suggested free models to rotate between.
+// Pool of suggested free models to rotate between - prioritized by reliability
 const List<ModelOption> kDeepSeekFreeModels = [
   ModelOption('deepseek/deepseek-chat-v3.1:free', 'DeepSeek Chat v3.1 (free)'),
+  ModelOption('deepseek/deepseek-chat:free', 'DeepSeek Chat (free)'),
   ModelOption('deepseek/deepseek-r1:free', 'DeepSeek R1 (free, reasoning)'),
   ModelOption('deepseek/deepseek-r1-0528:free', 'DeepSeek R1 0528 (free)'),
   ModelOption(
     'deepseek/deepseek-r1-distill-llama-70b:free',
     'R1 Distill Llama 70B (free)',
   ),
+  ModelOption('meta-llama/llama-3.2-3b-instruct:free', 'Llama 3.2 3B (free)'),
+  ModelOption('qwen/qwen-2-7b-instruct:free', 'Qwen 2 7B (free)'),
+  ModelOption('google/gemini-flash-1.5:free', 'Gemini Flash 1.5 (free)'),
 ];
 
 /// Special value representing automatic rotation across the pool.
