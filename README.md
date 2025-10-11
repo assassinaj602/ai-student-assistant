@@ -1,53 +1,69 @@
-# AI Student Assistant
+# 🎓 AI Student Assistant
 
-A Flutter app with a Node.js backend proxy for AI-powered student assistance including timetable management, note-taking, chat, and flashcard generation.
+A comprehensive Flutter application for AI-powered student assistance including timetable management, note-taking, intelligent chat, and flashcard generation with Firebase integration.
 
-## Features
+## ✨ Features
 
-- 🔐 Firebase Authentication (Email/Password + Google Sign-in)
-- 📚 Course and Timetable Management
-- 📝 Note-taking with AI Summarization
-- 🤖 AI Chat Assistant (via Hugging Face)
-- 🎯 AI-generated Flashcards
-- 🔍 Semantic Search across Notes
-- 📱 Offline-first with Auto-sync
-- 🔔 Local Notifications for Classes
-- 💾 SQLite for Local Storage
+- 🔐 **Authentication**: Firebase Email/Password + Google Sign-in
+- 📚 **Course Management**: Organized timetable and course tracking  
+- 📝 **Smart Notes**: AI-powered note summarization and organization
+- 🤖 **AI Chat**: Intelligent assistant with multi-model support (200 requests/day)
+- 🎯 **Flashcards**: AI-generated study cards from your content
+- 🔍 **Semantic Search**: Find information across all your notes
+- 📱 **Offline-First**: Works without internet, syncs when connected
+- 🔔 **Notifications**: Smart reminders for classes and study sessions
+- 💾 **Local Storage**: SQLite for reliable offline functionality
+- 🌐 **Cross-Platform**: Web, Android, and iOS support
 
-## Tech Stack
+## 🚀 Tech Stack
 
-**Frontend (Flutter):**
+**Frontend (Flutter 3.24+):**
 - Riverpod for State Management
 - Firebase Auth & Firestore
 - SQLite for Offline Storage
-- Dio for HTTP Requests
+- OpenRouter AI API Integration
 
-**Backend (Node.js):**
-- Express.js Proxy Server
-- Firebase Admin SDK
-- Hugging Face Inference API
-- Rate Limiting & Quota Management
+**Backend (Firebase):**
+- Firebase Hosting (Web App)
+- Firestore Database
+- Firebase Authentication
+- Cloud Storage
 
-## Setup Instructions
+## 📋 Prerequisites
+
+- Flutter SDK 3.24 or higher
+- Firebase CLI
+- Git
+- 4 Free OpenRouter API accounts (for 200 daily requests)
+
+## 🛠️ Setup Instructions
 
 ### 1. Clone Repository
 ```bash
-git clone <repository-url>
-cd ai_student_assistant
+git clone https://github.com/assassinaj602/ai-student-assistant.git
+cd ai-student-assistant
 ```
 
-### 2. Configure Environment Variables
+### 2. Environment Configuration
 ```bash
-# Root directory (optional, only if you use dotenv in Flutter)
-copy .env.example .env
-
-# Backend directory
-cd backend
-copy .env.example .env
+# Copy the environment template
+cp .env.template .env
 ```
 
-Fill in backend `.env` with:
-- `FIREBASE_PROJECT_ID`: Your Firebase project ID
+### 3. Get Your API Keys
+1. Visit [OpenRouter.ai](https://openrouter.ai/)
+2. Create **4 different accounts** (use different emails)
+3. Get a free API key from each account (50 requests/day each)
+4. Copy all 4 keys to your `.env` file:
+
+```bash
+OPENROUTER_API_KEY_1=sk-or-v1-your-first-key-here
+OPENROUTER_API_KEY_2=sk-or-v1-your-second-key-here
+OPENROUTER_API_KEY_3=sk-or-v1-your-third-key-here
+OPENROUTER_API_KEY_4=sk-or-v1-your-fourth-key-here
+```
+
+### 4. Firebase Configuration
 - `FIREBASE_SERVICE_ACCOUNT_KEY`: Path to Firebase Admin JSON (e.g., ./config/firebase-service-account-key.json)
 - `HUGGING_FACE_API_KEY`: Your Hugging Face API token
 - `CORS_ORIGINS`: Comma-separated origins for your Flutter web dev URL(s), e.g., `http://localhost:5000`
