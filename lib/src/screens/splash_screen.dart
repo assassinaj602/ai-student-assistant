@@ -48,13 +48,6 @@ class _SplashScreenState extends State<SplashScreen>
     // Start fade animation after a brief delay
     await Future.delayed(const Duration(milliseconds: 300));
     _fadeController.forward();
-
-    // Navigate to main screen after animations complete
-    Timer(const Duration(milliseconds: 3000), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/');
-      }
-    });
   }
 
   @override

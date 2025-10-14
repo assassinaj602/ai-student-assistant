@@ -5,39 +5,64 @@ import 'theme.dart';
 import 'providers/auth_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 
 /// Main application widget that handles routing and authentication state
-class AIStudentAssistantApp extends ConsumerWidget {
+class AIStudentAssistantApp extends ConsumerStatefulWidget {
   const AIStudentAssistantApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Watch authentication state to determine which screen to show
-    final authState = ref.watch(authStateProvider);
+  ConsumerState<AIStudentAssistantApp> createState() => _AIStudentAssistantAppState();
+}
 
+class _AIStudentAssistantAppState extends ConsumerState<AIStudentAssistantApp> {
+  bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Show splash screen for 3 seconds
+    Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() => _showSplash = false);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
       title: 'AI Student Assistant',
       theme: appTheme,
       debugShowCheckedModeBanner: false,
-      home: authState.when(
-        data: (user) {
-          print('Auth state resolved with user: ${user?.email ?? 'null'}');
-          // If user is logged in, show home screen
-          if (user != null) {
-            return const HomeScreen();
-          }
-          // If no user, show login screen
-          return const LoginScreen();
-        },
-        loading: () {
-          print('Auth state is loading...');
-          return const _LoadingScreenWithTimeout();
-        },
-        error: (error, stackTrace) {
-          print('Auth state error: $error');
-          return _ErrorScreen(error: error.toString());
-        },
-      ),
+      home: _showSplash 
+        ? const SplashScreen()
+        : Consumer(
+            builder: (context, ref, _) {
+              // Watch authentication state to determine which screen to show
+              final authState = ref.watch(authStateProvider);
+
+              return authState.when(
+                data: (user) {
+                  print('Auth state resolved with user: ${user?.email ?? 'null'}');
+                  // If user is logged in, show home screen
+                  if (user != null) {
+                    return const HomeScreen();
+                  }
+                  // If no user, show login screen
+                  return const LoginScreen();
+                },
+                loading: () {
+                  print('Auth state is loading...');
+                  return const _LoadingScreenWithTimeout();
+                },
+                error: (error, stackTrace) {
+                  print('Auth state error: $error');
+                  return _ErrorScreen(error: error.toString());
+                },
+              );
+            },
+          ),
     );
   }
 }

@@ -80,14 +80,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 48,
-        titleSpacing: 8,
-        title: const Text(
-          'AI Student Assistant',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
+    return PopScope(
+      canPop: false, // Prevent back button from closing app
+      onPopInvoked: (bool didPop) {
+        if (didPop) return;
+        
+        // If not on dashboard (index 0), go back to dashboard
+        if (_selectedIndex != 0) {
+          setState(() => _selectedIndex = 0);
+        }
+        // If on dashboard, do nothing (keep app open)
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          toolbarHeight: 48,
+          titleSpacing: 8,
+          title: const Text(
+            'AI Student Assistant',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -205,6 +216,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             label: 'Flashcards',
           ),
         ],
+      ),
       ),
     );
   }
