@@ -18,17 +18,15 @@ void main() async {
 
   debugPrint('Starting AI Student Assistant...');
 
-  // Load .env for native platforms (mobile/desktop)
-  // Web builds use --dart-define instead
-  if (!kIsWeb) {
-    try {
-      await dotenv.load(fileName: ".env");
-      debugPrint('✅ Loaded .env file for API keys');
-    } catch (e) {
-      debugPrint('⚠️ No .env file found (will use --dart-define): $e');
-    }
-  } else {
-    debugPrint('Web build: using --dart-define for secrets');
+  // Load .env file for ALL platforms (including web during development)
+  // Production web builds can still use --dart-define for deployment
+  try {
+    await dotenv.load(fileName: ".env");
+    debugPrint('✅ Loaded .env file for API keys');
+  } catch (e) {
+    debugPrint(
+      '⚠️ No .env file found (will use --dart-define if available): $e',
+    );
   }
 
   // Initialize Firebase

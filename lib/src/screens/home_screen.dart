@@ -84,7 +84,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       canPop: false, // Prevent back button from closing app
       onPopInvoked: (bool didPop) {
         if (didPop) return;
-        
+
         // If not on dashboard (index 0), go back to dashboard
         if (_selectedIndex != 0) {
           setState(() => _selectedIndex = 0);
@@ -99,124 +99,124 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             'AI Student Assistant',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'profile':
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                  );
-                  break;
-                case 'logout':
-                  _handleLogout();
-                  break;
-                case 'settings':
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const DiagnosticsScreen(),
+          actions: [
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'profile':
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    );
+                    break;
+                  case 'logout':
+                    _handleLogout();
+                    break;
+                  case 'settings':
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const DiagnosticsScreen(),
+                      ),
+                    );
+                    break;
+                }
+              },
+              itemBuilder:
+                  (context) => [
+                    const PopupMenuItem(
+                      value: 'profile',
+                      child: Row(
+                        children: [
+                          Icon(Icons.person),
+                          SizedBox(width: 8),
+                          Text('Profile'),
+                        ],
+                      ),
                     ),
-                  );
-                  break;
-              }
-            },
-            itemBuilder:
-                (context) => [
-                  const PopupMenuItem(
-                    value: 'profile',
-                    child: Row(
-                      children: [
-                        Icon(Icons.person),
-                        SizedBox(width: 8),
-                        Text('Profile'),
-                      ],
+                    const PopupMenuItem(
+                      value: 'settings',
+                      child: Row(
+                        children: [
+                          Icon(Icons.developer_board),
+                          SizedBox(width: 8),
+                          Text('AI Diagnostics'),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'settings',
-                    child: Row(
-                      children: [
-                        Icon(Icons.developer_board),
-                        SizedBox(width: 8),
-                        Text('AI Diagnostics'),
-                      ],
+                    const PopupMenuItem(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          Icon(Icons.logout),
+                          SizedBox(width: 8),
+                          Text('Sign Out'),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'logout',
-                    child: Row(
-                      children: [
-                        Icon(Icons.logout),
-                        SizedBox(width: 8),
-                        Text('Sign Out'),
-                      ],
-                    ),
-                  ),
-                ],
-          ),
-        ],
-      ),
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        backgroundColor: const Color(0xFF1A1625),
-        selectedItemColor: const Color(0xFFA78BFA),
-        unselectedItemColor: const Color(0xFFD1D5DB),
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.dashboard_rounded,
-              color:
-                  _selectedIndex == 0
-                      ? const Color(0xFFA78BFA)
-                      : const Color(0xFFD1D5DB),
+                  ],
             ),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.calendar_today_rounded,
-              color:
-                  _selectedIndex == 1
-                      ? const Color(0xFFA78BFA)
-                      : const Color(0xFFD1D5DB),
+          ],
+        ),
+        body: _screens[_selectedIndex],
+        bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          backgroundColor: const Color(0xFF1A1625),
+          selectedItemColor: const Color(0xFFA78BFA),
+          unselectedItemColor: const Color(0xFFD1D5DB),
+          items: [
+            BottomNavigationBarItem(
+              icon: Icon(
+                Icons.dashboard_rounded,
+                color:
+                    _selectedIndex == 0
+                        ? const Color(0xFFA78BFA)
+                        : const Color(0xFFD1D5DB),
+              ),
+              label: 'Dashboard',
             ),
-            label: 'Timetable',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.note_alt_rounded,
-              color:
-                  _selectedIndex == 2
-                      ? const Color(0xFFA78BFA)
-                      : const Color(0xFFD1D5DB),
+            BottomNavigationBarItem(
+              icon: Icon(
+                Icons.calendar_today_rounded,
+                color:
+                    _selectedIndex == 1
+                        ? const Color(0xFFA78BFA)
+                        : const Color(0xFFD1D5DB),
+              ),
+              label: 'Timetable',
             ),
-            label: 'Notes',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.smart_toy_rounded,
-              color:
-                  _selectedIndex == 3
-                      ? const Color(0xFFA78BFA)
-                      : const Color(0xFFD1D5DB),
+            BottomNavigationBarItem(
+              icon: Icon(
+                Icons.note_alt_rounded,
+                color:
+                    _selectedIndex == 2
+                        ? const Color(0xFFA78BFA)
+                        : const Color(0xFFD1D5DB),
+              ),
+              label: 'Notes',
             ),
-            label: 'AI Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.style_rounded,
-              color:
-                  _selectedIndex == 4
-                      ? const Color(0xFFA78BFA)
-                      : const Color(0xFFD1D5DB),
+            BottomNavigationBarItem(
+              icon: Icon(
+                Icons.smart_toy_rounded,
+                color:
+                    _selectedIndex == 3
+                        ? const Color(0xFFA78BFA)
+                        : const Color(0xFFD1D5DB),
+              ),
+              label: 'AI Chat',
             ),
-            label: 'Flashcards',
-          ),
-        ],
-      ),
+            BottomNavigationBarItem(
+              icon: Icon(
+                Icons.style_rounded,
+                color:
+                    _selectedIndex == 4
+                        ? const Color(0xFFA78BFA)
+                        : const Color(0xFFD1D5DB),
+              ),
+              label: 'Flashcards',
+            ),
+          ],
+        ),
       ),
     );
   }
